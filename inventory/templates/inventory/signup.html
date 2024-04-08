@@ -11,24 +11,20 @@
 				<div class="card-body">
 					<div class="container-fluid">
 						{% if form.errors %}
+							<div class="alert alert-warning alert-dismissible fade show" role="alert">
+							Your Form Has Errors
 							{% for field in form %}
-								{% for error in field.errors %}
-									<div class="alert alert-danger">
-										<strong>{{ error|escape }}</strong>
-									</div>
-								{% endfor %}
+								{% if field.errors %}
+									{{ field.errors|escape }}
+								{% endif %}
 							{% endfor %}
-							{% for error in form.non_field_errors %}
-								<div class="alert alert-danger">
-									<strong>{{ error|escape }}</strong>
-								</div>
-							{% endfor %}
+							<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+							</div>
 						{% endif %}
-
 						<form method="post">
 							{% csrf_token %}
 							{{ form|crispy }}
-							<button class="btn btn-outline-danger" type="submit">Sign Up</button>
+							<button class="btn btn-outline-dark" type="submit">Sign Up</button>
 						</form>
 					</div>
 				</div>
