@@ -33,10 +33,12 @@ class SignUpView(View):
         form = UserRegisterForm(request.POST)
         if form.is_valid():
             form.save()
+            # authenticate and login
             user = authenticate(username=form.cleaned_data['username'],
                                 password=form.cleaned_data['password1'])
 
             login(request, user)
+            messages.success(request, "You Have Successfully Registered! Welcome!")
             return redirect('index')
 
         return render(request, 'inventory/signup.html', {'form': form})
