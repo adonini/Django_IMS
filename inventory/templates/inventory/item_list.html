@@ -13,7 +13,7 @@
         </div>
         <div class="card-body">
             <div class="container-fluid">
-                <table class="table table-bordered" id="product-list">
+                <table class="table table-bordered" id="item-list">
                     {% comment %} <colgroup>
                         <col width="5%">
                         <col width="15%">
@@ -82,31 +82,16 @@
 </div>
 {% endblock content %}
 
-{% comment %} {% block ScriptBlock %}
+{% block ScriptBlock %}
 <script>
-    $(function() {
-        $('#add_new').click(function() {
-            uni_modal('<i class="fa fa-plus"></i> Add Product', '{% url "manage-product" %}', 'modal-md')
-        })
-        $('.edit-data').click(function() {
-            uni_modal('<i class="fa fa-edit"></i> Edit Product', '{% url "manage-product" %}/' + $(this).attr('data-id'), 'modal-md')
-        })
-        $('.delete-data').click(function() {
-            _conf("Are you sure to delete this Product permanently?", "delete_product", [$(this).attr('data-id')])
-        })
-
-        $('#product-list').DataTable({
+    $(document).ready(function() {
+        $('#item-list').DataTable({
             columnDefs: [{
                 orderable: false,
-                targets: 5
+                targets: 10
             }],
-            initComplete: function(settings, json) {
-                $('table td, table th').addClass('px-2 py-1')
-            },
-            drawCallback: function(settings) {
-                $('table td, table th').addClass('px-2 py-1')
-            }
-        })
-    })
+            
+        });
+    });
 </script>
-{% endblock ScriptBlock %} {% endcomment %}
+{% endblock ScriptBlock %}

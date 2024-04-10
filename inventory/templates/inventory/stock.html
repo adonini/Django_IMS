@@ -10,7 +10,7 @@
         </div>
         <div class="card-body">
             <div class="container-fluid">
-                <table class="table table-bordered" id="product-list">
+                <table class="table table-bordered" id="stock-list">
                     {% comment %} <colgroup>
                         <col width="5%">
                         <col width="35%">
@@ -61,3 +61,16 @@
     </div>
 </div>
 {% endblock content %}
+
+{% block ScriptBlock %}
+<script>
+    $(document).ready(function() {
+        $('#stock-list').DataTable({
+            columnDefs: [{
+                orderable: false,
+                targets: 5
+            }],
+        });
+    });
+</script>
+{% endblock ScriptBlock %}
