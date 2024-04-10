@@ -1,11 +1,18 @@
 from django.shortcuts import render, redirect
-from django.urls import reverse_lazy
+#from django.urls import reverse_lazy
 from django.views.generic import TemplateView, View, CreateView
+#from django.views.generic.detail import DetailView
 from django.contrib.auth import authenticate, login, logout
-from .forms import UserRegisterForm, InventoryItemForm
-from .models import InventoryItem, Category
+from .forms import UserRegisterForm  #, InventoryItemForm
+from .models import StockItem, Item, Category
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
+#from django.shortcuts import get_object_or_404
+
+
+context = {
+    'page_title': 'File Management System',
+}
 
 
 def logout_user(request):
@@ -20,8 +27,48 @@ class Index(TemplateView):
 
 class Stock(LoginRequiredMixin, View):
     def get(self, request):
-        items = InventoryItem.objects.order_by('id')
-        return render(request, 'inventory/stock.html', {'items': items})
+        context['page_title'] = 'Stock'
+        stocks = StockItem.objects.all()
+        context['stocks'] = stocks
+        return render(request, 'inventory/stock.html', context)
+
+
+class Item_list(LoginRequiredMixin, View):
+    def get(self, request):
+        context['page_title'] = 'Item list'
+        items = Item.objects.all()
+        context['items'] = items
+        return render(request, 'inventory/item_list.html', context)
+
+
+class Item_record(LoginRequiredMixin, View):
+    def get(self, request, pk=None):
+        context['page_title'] = 'Item Detail'
+        if pk is None:
+            messages.error(request, "Product ID is not recognized")
+            return redirect('inventory-page')
+        else:
+            item = Item.objects.get(id=pk)
+            stocks = StockItem.objects.filter(item=item).all()
+            context['item'] = item
+            context['stocks'] = stocks
+
+            return render(request, 'inventory/item_record.html', context)
+
+
+class Stock_record(LoginRequiredMixin, View):
+    def get(self, request, pk=None):
+        context['page_title'] = 'Stock Detail'
+        if pk is None:
+            messages.error(request, "Product ID is not recognized")
+            return redirect('inventory-page')
+        else:
+            item = Item.objects.get(id=pk)
+            stocks = StockItem.objects.filter(item=item).all()
+            context['item'] = item
+            context['stocks'] = stocks
+
+            return render(request, 'inventory/stock_record.html', context)
 
 
 class SignUpView(View):
