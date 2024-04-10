@@ -1,36 +1,63 @@
 {% extends 'inventory/base.html' %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-10 col-12 mx-auto mt-5">
-        <div class="d-flex justify-content-end">
-            <a href="{% url 'add-item' %}" class="btn btn-primary">+</a> {% comment "button to add element" %}{% endcomment %}
-			</div>
-
-			<table class="table table-hover table-striped">
-				<thead>
-					<tr>
-						<th scope="col">ID</th>
-						<th scope="col">Name</th>
-						<th scope="col">Qty</th>
-						<th scope="col">Category</th>
-						<th scope="col"></th>
-						<th scope="col"></th>
-					</tr>
-				</thead>
-                <tbody>
-					{% if items|length == 0 %}
-					<tr>
-						<th scope="row">-</th>
-						<td>-</td>
-						<td>-</td>
-						<td>-</td>
-						<td>-</td>
-						<td></td>
-					</tr>
-					{% endif %}
-                </tbody>
-			</table>
-		</div>
-	</div>
+<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+    <div class="card card-default rounded-0 shadow ">
+        <div class="card-header">
+            <div class="d-flex w-100 align-items-center justify-content-between">
+                <h4 class="card-title fw-bold">Stock Info</h4>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="container-fluid">
+                <table class="table table-bordered" id="product-list">
+                    {% comment %} <colgroup>
+                        <col width="5%">
+                        <col width="35%">
+                        <col width="35%">
+                        <col width="25%">
+                    </colgroup> {% endcomment %}
+                    <thead>
+                        <tr class="bg-gradient bg-primary bg-opacity-50 text-light">
+                            <th class="px-2 py-2 text-center">#</th>
+                            <th class="px-2 py-2 text-center">Product</th>
+							<th class="px-2 py-2 text-center">Location</th>
+                            <th class="px-2 py-2 text-center">Available Stock</th>
+							<th class="px-2 py-2 text-center">Category</th>
+                            <th class="px-2 py-2 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+						{% if stocks|length == 0 %}
+						<tr>
+							<th scope="row">-</th>
+							<td>-</td>
+							<td>-</td>
+							<td>-</td>
+							<td>-</td>
+							<td></td>
+						</tr>
+						{% endif %}
+						{% for stock in stocks %}
+						<tr>
+							<th class="text-center" scope="row">{{ forloop.counter }}</th>
+							<td class="text-center"><a href="{% url 'stock_record' stock.pk%}">{{ stock.item }}</a></td>
+							<td class="text-center">{{ stock.area }} {{ stock.shelf }}</td>
+							<td class="text-center">{{ stock.item.count_inventory }}</td>
+							{% comment %} {% if item.id in low_inventory_ids %}
+								<td class="text-danger">{{ item.quantity }}</td>
+							{% else %}
+								<td class="text-success">{{ item.quantity }}</td>
+							{% endif %} {% endcomment %}
+							<td class="text-center">{{ stock.item.category.name }}</td>
+							<td class="text-center"><a href="#" class="btn btn-outline-secondary">Edit</a>
+							<a href="#" class="btn btn-secondary">Delete</a></td>
+						</tr>
+						{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock content %}

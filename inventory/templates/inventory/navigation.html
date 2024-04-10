@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark" data-bs-theme="dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="{% url "index" %}"> LST IMS </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-expanded="false"
@@ -12,10 +12,13 @@
                         <a class="nav-link" href="{% url 'index' %}">Home</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="{% url 'item_list' %}">Items</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{% url 'stock' %}">Stock</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Purchse</a>
+                        <a class="nav-link" href="#">Purchases</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav d-flex">
