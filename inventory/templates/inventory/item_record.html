@@ -3,29 +3,24 @@
 
 {% block content %}
 
-<div class="card">
-    <div class="card-header"><strong>
+<div class="card border-dark">
+    <div class="card-header bg-primary"><strong>
         {{ item.code }}
         {{ item.name }}</strong>
     </div>
-    <div class="card-body">
-        <p class="card-text"><strong>Description: </strong>{{ item.description }}</p>
-        <p class="card-text"><strong>Category: </strong>{{ item.category }}</p>
-        <p class="card-text"><strong>Producer: </strong>{{ item.producer }}</p>
-        <p class="card-text"><strong>Model: </strong>{{ item.model }}</p>
-        <p class="card-text"><strong>In Stock: </strong>{{ item.count_inventory }}</p>
-        {% comment %} <p class="card-text"><strong>Location: </strong>{{ stocks.area }} {{stocks.shelf}}</p> {% endcomment %}
-        <p class="card-text"><strong>Serials:</strong></p>
-        <ul>
-            {% for serial in item.split_serials %}
-                <li>{{ serial }}</li>
-            {% endfor %}
-        </ul>
-        <p class="card-text"><strong>Create At: </strong>{{ item.date_created}}</p>
-        <p class="card-text"><strong>Created By: </strong>{{ item.user}}</p>
-    </div>
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item"><strong>Description</strong> <br> {{ item.description }}</li>
+        <li class="list-group-item"><strong>Category</strong> <br> {{ item.category }}</li>
+        <li class="list-group-item"><strong>Producer</strong> <br> {{ item.producer }}</li>
+        <li class="list-group-item"><strong>Model</strong> <br> {{ item.model }}</li>
+        <li class="list-group-item"><strong>In Stock</strong> <br> {{ item.count_inventory }}</li>
+        <li class="list-group-item"><strong>Serials</strong> <br> {{ item.split_serials }}</li>
+        <li class="list-group-item"><strong>Create At</strong> <br> {{ item.date_created}}</li>
+        <li class="list-group-item"><strong>Created By</strong> <br> {{ item.user}}</li>
+        <li class="list-group-item"><strong>Last Modify</strong> <br> {{ item.date_updated}}</li>
+    </ul>
     <div class="card-footer">
-        <a href="{% url 'item_list' %}" class="btn btn-secondary">Back</a>
+        <a href="{% url 'item_list' %}" class="btn btn-primary">Back</a>
     </div>
 </div>
 

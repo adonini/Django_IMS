@@ -5,53 +5,43 @@
     <div class="card card-default rounded-0 shadow ">
         <div class="card-header">
             <div class="d-flex w-100 align-items-center justify-content-between">
-                <h4 class="card-title fw-bold">Stock Info</h4>
+                <h4 class="card-title fw-bold">Stock</h4>
             </div>
         </div>
         <div class="card-body">
             <div class="container-fluid">
-                <table class="table table-bordered" id="stock-list">
-                    {% comment %} <colgroup>
-                        <col width="5%">
-                        <col width="35%">
-                        <col width="35%">
-                        <col width="25%">
-                    </colgroup> {% endcomment %}
+                <table class="table table-bordered" id="item-list">
                     <thead>
                         <tr class="bg-gradient bg-primary bg-opacity-50 text-light">
                             <th class="px-2 py-2 text-center">#</th>
                             <th class="px-2 py-2 text-center">Product</th>
 							<th class="px-2 py-2 text-center">Location</th>
                             <th class="px-2 py-2 text-center">Available Stock</th>
-							<th class="px-2 py-2 text-center">Category</th>
+							<th class="px-2 py-2 text-center">Reorder Point</th>
                             <th class="px-2 py-2 text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody>
-						{% if stocks|length == 0 %}
+						{% for item in items %}
 						<tr>
-							<th scope="row">-</th>
-							<td>-</td>
-							<td>-</td>
-							<td>-</td>
-							<td>-</td>
-							<td></td>
-						</tr>
-						{% endif %}
-						{% for stock in stocks %}
-						<tr>
-							<th class="text-center" scope="row">{{ forloop.counter }}</th>
-							<td class="text-center"><a href="{% url 'stock_record' stock.pk%}">{{ stock.item }}</a></td>
-							<td class="text-center">{{ stock.area }} {{ stock.shelf }}</td>
-							<td class="text-center">{{ stock.item.count_inventory }}</td>
+							<th class="align-middle text-center" scope="row">{{ forloop.counter }}</th>
+							<td class="align-middle text-center">{{ item }}</a></td>
+							<td class="align-middle text-center">{{ stock.area }} {{ stock.shelf }}</td>
+							<td class="align-middle text-center">{{ item.count_inventory }}</td>
 							{% comment %} {% if item.id in low_inventory_ids %}
 								<td class="text-danger">{{ item.quantity }}</td>
 							{% else %}
 								<td class="text-success">{{ item.quantity }}</td>
 							{% endif %} {% endcomment %}
-							<td class="text-center">{{ stock.item.category.name }}</td>
-							<td class="text-center"><a href="#" class="btn btn-outline-secondary">Edit</a>
-							<a href="#" class="btn btn-secondary">Delete</a></td>
+							<td class="text-center">{{ stock.reorder_point }}</td>
+							<td class="align-middle text-center">
+                                <button type="button" class="btn btn-outline-info btn-sm edit-stock" href="javascript:void(0)" data-id="{{ item.pk }}" title="Edit">
+                                    EDIT
+                                </button>
+                                <a class="btn btn-outline-primary btn-sm" href="{% url 'stock-record' item.pk %}" data-id="{{ item.pk }}" title="View">
+                                    INFO
+                                </a>
+                            </td>
 						</tr>
 						{% endfor %}
                     </tbody>
@@ -64,13 +54,28 @@
 
 {% block ScriptBlock %}
 <script>
-    $(document).ready(function() {
-        $('#stock-list').DataTable({
-            columnDefs: [{
-                orderable: false,
-                targets: 5
-            }],
+    $(function() {
+        //remove the default 'Search' text for all DataTable search boxes
+        $.extend(true, $.fn.dataTable.defaults, {
+            language: {
+                search: ""
+            }
         });
-    });
+        $('#item-list').DataTable({
+            layout: {
+                top1Start: {
+                    buttons: ['copy', 'csv', 'excel', 'print']
+                }
+            },
+            columnDefs: [
+                {orderable: false, targets: [1,2,3,4,5]},
+            ]
+        });
+        //custom format of Search boxes
+        $('[type=search]').each(function () {
+            $(this).attr("placeholder", "Search...");
+            $(this).before('<span class="fa fa-search"></span>');
+        });
+    })
 </script>
 {% endblock ScriptBlock %}

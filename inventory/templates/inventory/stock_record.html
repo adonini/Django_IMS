@@ -1,80 +1,112 @@
 {% extends "inventory/base.html" %}
-
+{% load humanize %}
 
 {% block content %}
 
-<div class="container pt-3">
-    <div class="card card-default border shadow rounded-0">
-        <div class="card-header">
+<div class="container">
+    <div class="card card-default border-dark shadow">
+        <div class="card-header bg-primary">
             <div class="w-100 d-flex justify-content-between">
-                <h5 class="fw-bolder card-title">Item Details</h5>
-                <button class="btn btn-primary btn-sm rounded-0 bg-gradient px-3" type="button" id="add_stock"><i class="fa fa-plus"></i> Add Stock</button>
+                <strong>Stock {{ item.code }} {{ item.name }}</strong>
+                <button class="btn btn-dark btn-sm rounded-0 bg-gradient px-3" type="button" id="add_stock"><i class="fa fa-plus"></i> Add Stock</button>
             </div>
         </div>
         <div class="card-body">
-            <div class="conteiner-fluid">
+            <div class="container-fluid">
                 <fieldset class="border-bottom">
-                    {% comment %} <legend>Item Details</legend> {% endcomment %}
-                    <dl>
-                        <dt class="tex-muted">Code</dt>
-                        <dd class="ps-4">{{ item.code }}</dd>
-                        <dt class="tex-muted">Name</dt>
-                        <dd class="ps-4">{{ item.name }}</dd>
-                        <dt class="tex-muted">Description</dt>
-                        <dd class="ps-4">{{ item.description }}</dd>
-                    </dl>
+                    <legend>Item Details</legend>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item"><strong>Description</strong> <br> {{ item.description }}</li>
+                                <li class="list-group-item"><strong>Category</strong> <br> {{ item.category }}</li>
+                                <li class="list-group-item"><strong>Producer</strong> <br> {{ item.producer }}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item"><strong>Model</strong> <br> {{ item.model }}</li>
+                                <li class="list-group-item"><strong>In Stock</strong> <br> {{ item.count_inventory }}</li>
+                                <li class="list-group-item"><strong>Serials</strong> <br> {{ item.split_serials }}</li>
+                            </ul>
+                        </div>
+                    </div>
                 </fieldset>
+                <br>
                 <fieldset>
                     <legend>History</legend>
-                    <table class="table table-bordered" id="stock-tbl">
-                        {% comment %} <colgroup>
-                            <col width="5%">
-                            <col width="25%">
-                            <col width="25%">
-                            <col width="25%">
-                            <col width="20%">
-                        </colgroup> {% endcomment %}
-                        <thead>
-                            <th class="text-center">#</th>
-                            <th class="text-center">Date</th>
-                            <th class="text-center">Quantity</th>
-                            <th class="text-center">Type</th>
-                            <th class="text-center">User</th>
-                            <th class="text-center">Action</th>
-                        </thead>
-                        <tbody>
-                            {% comment %} {% for stock in stocks %} {% endcomment %}
-                            <tr>
-                                {% comment %} <td class="text-center">{{ forloop.counter }}</td>
-                                <td class="">{{ stock.date_created|date:"Y-m-d h:i A" }}</td>
-                                <td class="text-center">{{ stock.quantity|floatformat:0|intcomma }}</td>
-                                <td class="text-center">
-                                    {% if stock.type == '1' %}
-                                    <span class="badge px-3 rounded-pill bg-primary bg-gradient">Stock In</span> {% else %}
-                                    <span class="badge px-3 rounded-pill bg-danger bg-gradient">Stock Out</span> {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    {% if stock.type == '1' %}
-                                    <a class="btn btn-outline-primary btn-sm edit-data" href="javascript:void(0)" data-id="{{ stock.pk }}" title="Edit">
-                                        <i class="fa fa-edit"></i>
-                                    </a>
-                                    <button class="btn btn-outline-danger btn-sm delete-data" type="button" data-id="{{ stock.pk }}" title="Delete">
-                                        <i class="fa fa-trash"></i>
-                                    </button>
-                                    {% else %}
-                                    ------
-                                    {% endif %} {% endcomment %}
-                                </td>
-                            </tr>
-                            {% comment %} {% endfor %} {% endcomment %}
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="stock-tbl">
+                            <thead>
+                                <th class="text-center">#</th>
+                                <th class="text-center">Date</th>
+                                <th class="text-center">Quantity</th>
+                                <th class="text-center">Type</th>
+                                <th class="text-center">User</th>
+                                <th class="text-center">Action</th>
+                            </thead>
+                            <tbody>
+                                {% for stock in stocks %}
+                                    <tr>
+                                        <td class="text-center">{{ forloop.counter }}</td>
+                                        <td class="">{{ stock.date_created|date:"Y-m-d h:i A" }}</td>
+                                        <td class="text-center">{{ stock.quantity|floatformat:0|intcomma }}</td>
+                                        <td class="text-center">
+                                            {% if stock.type == '1' %}
+                                                <span class="badge px-3 rounded-pill bg-primary bg-gradient">Stock In</span>
+                                            {% else %}
+                                                <span class="badge px-3 rounded-pill bg-danger bg-gradient">Stock Out</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="">{{ stock.user }}</td>
+                                        <td class="text-center">
+                                            {% if stock.type == '1' %}
+                                                <a class="btn btn-outline-info btn-sm edit-data" href="javascript:void(0)" data-id="{{ stock.pk }}" title="Edit">
+                                                    Edit
+                                                </a>
+                                                <button class="btn btn-outline-danger btn-sm delete-data" type="button" data-id="{{ stock.pk }}" title="Delete">
+                                                    Delete
+                                                </button>
+                                            {% else %}
+                                                ------
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </fieldset>
             </div>
         </div>
+        <div class="card-footer">
+            <a href="{% url 'stock' %}" class="btn btn-dark">Back</a>
+        </div>
     </div>
-    <br/><br/>
-    <a href="{% url 'stock' %}" class="btn btn-secondary">Back</a>
 </div>
-
 {% endblock content %}
+{% block ScriptBlock %}
+<script>
+    $(function() {
+        $('#add_stock').click(function() {
+            uni_modal("<i class='fa fa-plus'></i> Add New Stock to <b>{{ item }}</b>", '{% url "manage-stock" item.pk %}')
+        })
+        //$('.edit-data').click(function() {
+        //    uni_modal("<i class='fa fa-edit'></i> Update Stock", '{% url "manage-stock" item.pk %}/' + $(this).attr('data-id'))
+        //})
+
+        $('.delete-data').click(function() {
+            _conf("Are you sure to delete this Stock Data?", 'delete_stock', [$(this).attr('data-id')])
+        })
+        // Initialize DataTable only if it's not already initialized
+        if (!$.fn.DataTable.isDataTable('#stock-tbl')) {
+            $('#stock-tbl').DataTable({
+                columnDefs: [{
+                    orderable: false,
+                    targets: 4
+                }],
+            });
+        }
+    })
+</script>
+{% endblock ScriptBlock %}

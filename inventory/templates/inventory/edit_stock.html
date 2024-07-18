@@ -1,0 +1,85 @@
+<div class="container-fluid">
+    <form action=" " id="stock-form">
+        {% csrf_token %}
+        <input type="hidden" name="id" value="{{ stock.id }}">
+        <input type="hidden" name="user" value="{{ stock.user }}">
+        <input type="hidden" name="item" value="{{ pid }}">
+        <input type="hidden" name="type" value="1">
+        <div class="form-group mb-3 ">
+            <label for="quantity" class="control-label">Quantity</label>
+            <input type="number" step="any" class="form-control rounded-0 text-end" id="quantity" name="quantity" value="{{ stock.quantity }}" required>
+        </div>
+        <div class="form-group mb-3 ">
+            <label for="reorder_point" class="control-label">Reorder Point</label>
+            <input type="number" step="any" class="form-control rounded-0 text-end" id="reorder_point" name="reorder_point" value="{{ stock.reorder_point }}" required>
+        </div>
+        <div class="form-group mb-3 ">
+            <label for="area" class="control-label">Area</label>
+            <input type="text" step="any" class="form-control rounded-0 text-end" id="area" name="area" value="{{ stock.area }}" required>
+        </div>
+        <div class="form-group mb-3 ">
+            <label for="shelf" class="control-label">Shelf</label>
+            <input type="text" step="any" class="form-control rounded-0 text-end" id="shelf" name="shelf" value="{{ stock.shelf }}" required>
+        </div>
+        <div class="form-group mb-3 ">
+            <label for="price" class="control-label">Price</label>
+            <input type="number" step="any" class="form-control rounded-0 text-end" id="price" name="price" value="{{ stock.price }}" required>
+        </div>
+    </form>
+</div>
+{% comment %} {% load crispy_forms_tags %}
+
+<div class="container-fluid">
+    <form method="post" id="stock-form">
+        {% csrf_token %}
+        {{ form|crispy }}
+    </form>
+</div> {% endcomment %}
+<script>
+    $(function() {
+        $('#stock-form').submit(function(e) {
+            e.preventDefault();
+            var _this = $(this)
+            $('.err-msg').remove();
+            var el = $('<div>')
+            el.addClass("alert alert-danger err-msg")
+            el.hide()
+            if (_this[0].checkValidity() == false) {
+                _this[0].reportValidity();
+                return false;
+            }
+            start_loader();
+            $.ajax({
+                url: "{% url 'add-stock' %}",
+                data: new FormData($(this)[0]),
+                cache: false,
+                contentType: false,
+                processData: false,
+                method: 'POST',
+                type: 'POST',
+                dataType: 'json',
+                error: err => {
+                    console.log(err)
+                    alert("An error occured ", 'error');
+                    end_loader();
+                },
+                success: function(resp) {
+                    if (typeof resp == 'object' && resp.status == 'success') {
+                        el.removeClass("alert alert-danger err-msg ")
+                        location.reload()
+                    } else if (resp.status == 'failed' && !!resp.msg) {
+                        el.html(resp.msg)
+                    } else {
+                        el.text("An error occured ", 'error');
+                        end_loader();
+                        console.err(resp)
+                    }
+                    _this.prepend(el)
+                    el.show('slow')
+                    $("html, body, .modal ").scrollTop(0);
+                    end_loader()
+                }
+            })
+        })
+    })
+</script>

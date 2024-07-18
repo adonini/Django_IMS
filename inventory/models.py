@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import validate_comma_separated_integer_list
+from django.dispatch import receiver
 
 
 class Item(models.Model):
@@ -25,8 +26,11 @@ class Item(models.Model):
 
     def split_serials(self):
         if self.serials:
-            return self.serials.split(',')
-        return []
+            # Remove any leading or trailing whitespace and split the serials string
+            serial_numbers = [serial.strip() for serial in self.serials.split(',') if serial.strip()]
+            #print(','.join(serial_numbers))
+            return ','.join(serial_numbers)
+        return ''
 
     def count_inventory(self):
         stocks = StockItem.objects.filter(item=self)
@@ -40,17 +44,24 @@ class Item(models.Model):
         available = stockIn - stockOut
         return available
 
+
+# class ItemSerialNumber(models.Model):
+#     serial_number = models.CharField(max_length=100)
+#     item = models.ForeignKey(Item, on_delete=models.CASCADE)
+
+#     def __str__(self):
+#         return self.serial_number
+
+
 class StockItem(models.Model):
     item = models.ForeignKey(Item, on_delete=models.SET_NULL, blank=True, null=True)  #on_delete=models.CASCADE)
-    #category = models.ForeignKey(Item, on_delete=models.SET_NULL, blank=True, null=True)
     quantity = models.FloatField(default=0)
+    reorder_point = models.IntegerField(default=0)
     area = models.CharField(max_length=100, blank=True, null=True)
     shelf = models.CharField(max_length=100, blank=True, null=True)
-    broken_units = models.IntegerField(default=0)
+    #broken_units = models.IntegerField(default=0)
     type = models.CharField(max_length=2, choices=(('1', 'Stock-in'), ('2', 'Stock-Out')), default=1)
-
-    #price = models.FloatField(default=0)
-    #status = models.CharField(max_length=2, choices=(('1','Active'),('2','Inactive')), default=1)
+    price = models.FloatField(default=0)
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
@@ -70,3 +81,18 @@ class Category(models.Model):
 
     class Meta:
         verbose_name_plural = 'categories'
+
+
+class Producer(models.Model):
+    name = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.name
+
+
+# @receiver(models.signals.post_save, sender=Invoice_Item)
+# def stock_update(sender, instance, **kwargs):
+#     stock = StockItem(product=instance.product, quantity = instance.quantity, type = 2)
+#     stock.save()
+#     # stockID = Stock.objects.last().id
+#     Invoice_Item.objects.filter(id= instance.id).update(stock=stock)
