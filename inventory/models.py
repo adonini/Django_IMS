@@ -9,7 +9,7 @@ class Item(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
     description = models.TextField(default='-')
     category = models.ForeignKey('Category', on_delete=models.SET_NULL, blank=True, null=True)
-    producer = models.CharField(max_length=50, blank=True, null=True)
+    producer = models.ForeignKey('Producer', on_delete=models.SET_NULL, blank=True, null=True)
     model = models.CharField(max_length=50, blank=True, null=True)
     serials = models.CharField(max_length=100, validators=[validate_comma_separated_integer_list], blank=True, null=True,
                                default='', help_text="Enter serial numbers as a comma-separated list of integers.")

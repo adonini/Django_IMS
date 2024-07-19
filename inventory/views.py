@@ -3,8 +3,9 @@ from django.shortcuts import render, redirect
 from django.views.generic import TemplateView, View, CreateView
 #from django.views.generic.detail import DetailView
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
 from .forms import UserRegisterForm, AddItemForm, AddStockForm
-from .models import StockItem, Item, Category
+from .models import StockItem, Item, Category, Producer
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 #from django.shortcuts import get_object_or_404
@@ -13,7 +14,9 @@ from django.http import JsonResponse
 from django.core import serializers
 from django.http import HttpResponse
 import json
+import logging
 
+logger = logging.getLogger(__name__)
 
 context = {
     'page_title': 'File Management System',
@@ -77,6 +80,7 @@ class Item_record(LoginRequiredMixin, View):
 class AddItem(LoginRequiredMixin, View):
     def post(self, request):
         resp = {'status': 'failed', 'msg': ''}
+        currentUser = User.objects.get(username=request.user)
         if request.method == 'POST':
             if (request.POST['id']).isnumeric():
                 item = Item.objects.get(pk=request.POST['id'])
@@ -87,7 +91,9 @@ class AddItem(LoginRequiredMixin, View):
             else:
                 form = AddItemForm(request.POST, instance=item)
             if form.is_valid():
-                form.save()
+                NewItem = form.save()
+                NewItem.user = currentUser
+                NewItem.save()
                 messages.success(request, 'Item has been saved successfully!')
                 resp['status'] = 'success'
             else:
@@ -108,6 +114,7 @@ class ManageItem(LoginRequiredMixin, View):
         else:
             context['item'] = {}
             context['categories'] = Category.objects.all()
+            context['producers'] = Producer.objects.all()
         return render(request, 'inventory/manage_item.html', context)
 
 
