@@ -21,6 +21,9 @@ class Item(models.Model):
     date_updated = models.DateTimeField(auto_now=True)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
 
+    class Meta:
+        db_table = 'items'
+
     def __str__(self):
         return self.code + ' - ' + self.name  # join code and name
 
@@ -43,6 +46,7 @@ class Item(models.Model):
                 stockOut = int(stockOut) + int(stock.quantity)
         available = stockIn - stockOut
         return available
+    
 
 
 # class ItemSerialNumber(models.Model):
@@ -66,6 +70,9 @@ class StockItem(models.Model):
     date_updated = models.DateTimeField(auto_now=True)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
 
+    class Meta:
+        db_table = 'stock_items'
+
     def __str__(self):
         if self.item:
             return self.item.code + ' - ' + self.item.name
@@ -76,15 +83,20 @@ class StockItem(models.Model):
 class Category(models.Model):
     name = models.CharField(max_length=200)
 
+    class Meta:
+        db_table = 'categories'
+        verbose_name_plural = 'categories'
+
     def __str__(self):
         return self.name
-
-    class Meta:
-        verbose_name_plural = 'categories'
+        
 
 
 class Producer(models.Model):
     name = models.CharField(max_length=200)
+
+    class Meta:
+        db_table = 'producers'
 
     def __str__(self):
         return self.name
