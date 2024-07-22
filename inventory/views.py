@@ -160,7 +160,7 @@ class Stock_record(LoginRequiredMixin, View):
             return redirect('stock')
         else:
             item = Item.objects.get(id=pk)
-            stocks = StockItem.objects.filter(item=item).all()
+            stocks = StockItem.objects.filter(item=item).order_by('-date_created').all() #This orders the item stock movements from most recent to older
             context['item'] = item
             context['stocks'] = stocks
             return render(request, 'inventory/stock_record.html', context)

@@ -166,7 +166,7 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
-        'myapp': {  # Reemplaza 'myapp' con el nombre de tu aplicación
+        'inventory': {  
             'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': True,

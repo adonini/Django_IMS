@@ -40,7 +40,7 @@ class Item(models.Model):
         stockIn = 0
         stockOut = 0
         for stock in stocks:
-            if stock.type == '1':
+            if stock.type.id == 1:
                 stockIn = int(stockIn) + int(stock.quantity)
             else:
                 stockOut = int(stockOut) + int(stock.quantity)
@@ -56,7 +56,15 @@ class Item(models.Model):
 #     def __str__(self):
 #         return self.serial_number
 
+class StockOPTypes(models.Model):
+    name = models.CharField(max_length=200)
 
+    class Meta:
+        db_table = 'stock_op_types'
+
+    def __str__(self):
+        return self.name
+    
 class StockItem(models.Model):
     item = models.ForeignKey(Item, on_delete=models.SET_NULL, blank=True, null=True)  #on_delete=models.CASCADE)
     quantity = models.FloatField(default=0)
@@ -64,7 +72,7 @@ class StockItem(models.Model):
     area = models.CharField(max_length=100, blank=True, null=True)
     shelf = models.CharField(max_length=100, blank=True, null=True)
     #broken_units = models.IntegerField(default=0)
-    type = models.CharField(max_length=2, choices=(('1', 'Stock-in'), ('2', 'Stock-Out')), default=1)
+    type = models.ForeignKey(StockOPTypes, on_delete=models.CASCADE)
     price = models.FloatField(default=0)
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
@@ -100,6 +108,9 @@ class Producer(models.Model):
 
     def __str__(self):
         return self.name
+    
+
+
 
 
 # @receiver(models.signals.post_save, sender=Invoice_Item)
