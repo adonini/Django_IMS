@@ -102,6 +102,11 @@ class Category(models.Model):
 
 class Producer(models.Model):
     name = models.CharField(max_length=200)
+    address = models.CharField(max_length=255, blank=True, null=True)
+    description = models.CharField(max_length=255, blank=True, null=True)
+    phone = models.CharField(max_length=255, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    website = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
         db_table = 'producers'
