@@ -1,7 +1,10 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
-from .models import Item, Category, StockItem, Producer, StockOPTypes
+from .models import Item, Category, StockItem, Producer, StockOPTypes, Purchase
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class UserRegisterForm(UserCreationForm):
@@ -51,3 +54,20 @@ class AddStockForm(forms.ModelForm):
             return item
         except:
             raise forms.ValidationError("Item is not valid")
+
+class AddPurchaseForm(forms.ModelForm):
+    item = forms.ModelChoiceField(queryset=Item.objects.all(), initial=0, required=False)
+
+    class Meta:
+        model = Purchase
+        fields = ['order_number','item', 'due_date', 'quantity', 'price_per_item', 'tracking_url']
+
+    def clean_Purchase(self):
+        pid = self.cleaned_data['purchase']
+        logger.debug('PID: ',pid)
+        try:
+            purchase = Purchase.objects.get(id=pid)
+            logger.debug(purchase)
+            return purchase
+        except:
+            raise forms.ValidationError("Purchase is not valid")

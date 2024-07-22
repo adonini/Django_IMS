@@ -4,8 +4,8 @@ from django.views.generic import TemplateView, View, CreateView
 #from django.views.generic.detail import DetailView
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
-from .forms import UserRegisterForm, AddItemForm, AddStockForm
-from .models import StockItem, Item, Category, Producer
+from .forms import UserRegisterForm, AddItemForm, AddStockForm, AddPurchaseForm
+from .models import StockItem, Item, Category, Producer, Purchase
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 #from django.shortcuts import get_object_or_404
@@ -88,6 +88,7 @@ class AddItem(LoginRequiredMixin, View):
                 item = None
             if item is None:
                 form = AddItemForm(request.POST)
+                logger.debug(form.fields)
             else:
                 form = AddItemForm(request.POST, instance=item)
             if form.is_valid():
@@ -213,3 +214,58 @@ class ManageStock(LoginRequiredMixin, View):
             stock = Stock.objects.get(id=pk)
             context['stock'] = stock
         return render(request, 'inventory/manage_stock.html', context)
+
+class Purchases(LoginRequiredMixin, View):
+    def get(self, request, pk=None):
+        context['page_title'] = 'Purchases'
+        logger.debug(pk)
+        if pk is None:
+            purchases = Purchase.objects.all()
+            context['purchases'] = purchases
+        else:
+            purchase = Purchase.objects.get(id=pk)
+            purchases = Purchase.objects.all()
+            context['purchase'] = purchase
+            context['purchases'] = purchases
+        logger.debug(context)
+        return render(request, 'inventory/purchases.html', context)
+    
+class ManagePurchase(LoginRequiredMixin, View):
+    def get(self, request, pk=None):
+        context['page_title'] = "Manage Purchase"
+        if not pk is None:
+            purchase = Purchase.objects.get(id=pk)
+            context['purchase'] = purchase
+        else:
+            context['purchase'] = {}
+            context['items'] = Item.objects.all()
+        return render(request, 'inventory/manage_purchase.html', context)
+    
+class AddPurchase(LoginRequiredMixin, View):
+    def post(self, request):
+        resp = {'status': 'failed', 'msg': ''}
+        currentUser = User.objects.get(username=request.user)
+        if request.method == 'POST':
+            if (request.POST['id']).isnumeric():
+                purchase = Purchase.objects.get(pk=request.POST['id'])
+            else:
+                purchase = None
+            if purchase is None:
+                form = AddPurchaseForm(request.POST)
+                logger.debug(form.fields)
+            else:
+                form = AddPurchaseForm(request.POST, instance=purchase)
+            if form.is_valid():
+                NewPurchase = form.save()
+                NewPurchase.user = currentUser
+                NewPurchase.save()
+                messages.success(request, 'Purchase has been saved successfully!')
+                resp['status'] = 'success'
+            else:
+                for fields in form:
+                    for error in fields.errors:
+                        resp['msg'] += str(error + "<br>")
+        else:
+            resp['msg'] = 'No data has been sent.'
+        return HttpResponse(json.dumps(resp), content_type='application/json')
+

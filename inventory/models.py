@@ -115,6 +115,27 @@ class Producer(models.Model):
         return self.name
     
 
+class Purchase(models.Model):
+    order_number = models.CharField(max_length=200)
+    item = models.ForeignKey(Item, on_delete=models.SET_NULL, blank=True, null=True)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(auto_now=True)
+    due_date = models.DateTimeField(default=date_created)
+    quantity = models.FloatField(default=0)
+    price_per_item = models.FloatField(default=0)
+    tracking_url = models.CharField(max_length=255, blank=True, null=True)
+    received = models.BooleanField(default=0)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
+
+    class Meta:
+        db_table = 'purchases'
+
+    def __str__(self):
+        return self.order_number
+    
+    def calculateAmount(self):
+        return float(self.quantity) * float(self.price_per_item)
+
 
 
 

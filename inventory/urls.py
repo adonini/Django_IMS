@@ -20,4 +20,8 @@ urlpatterns = [
     path('manage_stock/<int:pid>/', views.ManageStock.as_view(), name='manage-stock'),
     path('manage_stock/<int:pid>/<int:pk>/', views.ManageStock.as_view(), name='manage-stock-pk'),
     path('add_stock/', views.AddStock.as_view(), name='add-stock'),
+    path('purchases/', views.Purchases.as_view(), name='purchases'),
+    path('manage_purchase/', views.ManagePurchase.as_view(), name='manage-purchase'),
+    path('manage_purchase/<int:pk>/', views.ManagePurchase.as_view(), name='manage-purchase-pk'),
+    path('add_purchase/', views.AddPurchase.as_view(), name='add-purchase')
 ]

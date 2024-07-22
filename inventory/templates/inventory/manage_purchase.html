@@ -1,0 +1,84 @@
+<div class="container-fluid">
+    <form action=" " id="purchase-form">
+        {% csrf_token %}
+        <input type="hidden" name="id" value="{{ purchase.id }}">
+        <div class="form-group mb-3 ">
+            <label for="order_number" class="control-label">Order Number</label>
+            <input type="text" class="form-control rounded-0" id="order_number" name="order_number" value="{{ purchase.order_number }}" required>
+        </div>
+        <div class="form-group mb-3 ">
+            <label for="item" class="control-label">Item</label>
+            <select class="form-control rounded-0" name="item" id="item">
+                <option value="" {% if not purchase.item %} selected {% endif %}>-----</option>
+                {% for item in items %}
+                    <option value="{{ item.id }}" {% if item.id == purchase.item.id %} selected {% endif %}>{{ item.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group mb-3">
+            <label for="due_date" class="control-label">Due Date</label>
+            <input type="datetime-local" class="form-control rounded-0" name="due_date" id="due_date" value="{{ purchase.due_date|date:'Y-m-d\\TH:i' }}" required>
+        </div>
+        <div class="form-group mb-3">
+            <label for="quantity" class="control-label">Quantity</label>
+            <input type="number" step="any" class="form-control rounded-0 text-end" id="quantity" name="quantity" value="{{ purchase.quantity }}" required>
+        </div>
+        <div class="form-group mb-3">
+            <label for="price_per_item" class="control-label">Price per Item</label>
+            <input type="number" step="any" class="form-control rounded-0 text-end" id="price_per_item" name="price_per_item" value="{{ purchase.price_per_item }}" required>
+        </div>
+        <div class="form-group mb-3 ">
+            <label for="tracking_url" class="control-label">Tracking URL</label>
+            <input type="text" class="form-control rounded-0" id="tracking_url" name="tracking_url" value="{{ purchase.tracking_url }}">
+        </div>
+    </form>
+</div>
+<script>
+    $(document).ready(function() {
+        $('#purchase-form').submit(function(e) {
+            // preventing from page reload and default actions
+            e.preventDefault();
+            var _this = $(this)
+            $('.err-msg').remove();
+            var el = $('<div>')
+            el.addClass("alert alert-danger err-msg")
+            el.hide()
+            if (_this[0].checkValidity() == false) {
+                _this[0].reportValidity();
+                return false;
+            }
+            start_loader();
+            $.ajax({
+                url: "{% url 'add-purchase' %}",
+                data: new FormData($(this)[0]),
+                cache: false,
+                contentType: false,
+                processData: false,
+                method: 'POST',
+                type: 'POST',
+                dataType: 'json',
+                error: err => {
+                    console.log(err)
+                    alert("An error occured ", 'error');
+                    end_loader();
+                },
+                success: function(resp) {
+                    if (typeof resp == 'object' && resp.status == 'success') {
+                        el.removeClass("alert alert-danger err-msg ")
+                        location.reload()
+                    } else if (resp.status == 'failed' && !!resp.msg) {
+                        el.html(resp.msg)
+                    } else {
+                        el.text("An error occured ", 'error');
+                        end_loader();
+                        console.err(resp)
+                    }
+                    _this.prepend(el)
+                    el.show('slow')
+                    $("html, body, .modal ").scrollTop(0);
+                    end_loader()
+                }
+            })
+        })
+    })
+</script>
