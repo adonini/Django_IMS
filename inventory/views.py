@@ -169,6 +169,7 @@ class Stock_record(LoginRequiredMixin, View):
 class AddStock(LoginRequiredMixin, View):
     def post(self, request):
         resp = {'status': 'failed', 'msg': ''}
+        currentUser = User.objects.get(username=request.user)
         if request.method == 'POST':
             print('ciao')
             if (request.POST['id']).isnumeric():
@@ -181,7 +182,9 @@ class AddStock(LoginRequiredMixin, View):
             else:
                 form = AddStockForm(request.POST, instance=stock)
             if form.is_valid():
-                form.save()
+                NewStock = form.save()
+                NewStock.user = currentUser
+                NewStock.save()
                 messages.success(request, 'Stock has been saved successfully.')
                 resp['status'] = 'success'
             else:
