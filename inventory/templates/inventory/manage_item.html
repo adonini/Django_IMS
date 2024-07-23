@@ -25,7 +25,12 @@
         </div>
         <div class="form-group mb-3 ">
             <label for="producer" class="control-label">Producer</label>
-            <input type="text" class="form-control rounded-0" id="producer" name="producer" value="{{ item.producer }}">
+            <select class="form-control rounded-0" name="producer" id="producer">
+                <option value="" {% if not item.producer %} selected {% endif %}>-----</option>
+                {% for producer in producers %}
+                    <option value="{{ producer.id }}" {% if producer.id == item.producer.id %} selected {% endif %}>{{ producer.name }}</option>
+                {% endfor %}
+            </select>
         </div>
         <div class="form-group mb-3 ">
             <label for="model" class="control-label">Model</label>

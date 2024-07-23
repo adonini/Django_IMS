@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
-from .models import Item, Category, StockItem
+from .models import Item, Category, StockItem, Producer, StockOPTypes
 
 
 class UserRegisterForm(UserCreationForm):
@@ -14,6 +14,7 @@ class UserRegisterForm(UserCreationForm):
 
 class AddItemForm(forms.ModelForm):
     category = forms.ModelChoiceField(queryset=Category.objects.all(), initial=0, required=False)  # to give the choice between already existing categories
+    producer = forms.ModelChoiceField(queryset=Producer.objects.all(), initial=0, required=False)  # to give the choice between already existing categories
 
     class Meta:
         model = Item
@@ -35,7 +36,7 @@ class AddItemForm(forms.ModelForm):
 class AddStockForm(forms.ModelForm):
     item = forms.CharField(max_length=30)
     quantity = forms.CharField(max_length=250)
-    type = forms.ChoiceField(choices=[('1', 'Stock-in'),('2', 'Stock-Out')])
+    type = forms.ModelChoiceField(queryset=StockOPTypes.objects.all(), initial=0, required=True)
 
     class Meta:
         model = StockItem

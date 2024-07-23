@@ -41,6 +41,7 @@
                                 <th class="text-center">#</th>
                                 <th class="text-center">Date</th>
                                 <th class="text-center">Quantity</th>
+                                <th class="text-center">Price</th>
                                 <th class="text-center">Type</th>
                                 <th class="text-center">User</th>
                                 <th class="text-center">Action</th>
@@ -51,16 +52,17 @@
                                         <td class="text-center">{{ forloop.counter }}</td>
                                         <td class="">{{ stock.date_created|date:"Y-m-d h:i A" }}</td>
                                         <td class="text-center">{{ stock.quantity|floatformat:0|intcomma }}</td>
+                                        <td class="text-center">{{ stock.price }} €</td>
                                         <td class="text-center">
-                                            {% if stock.type == '1' %}
-                                                <span class="badge px-3 rounded-pill bg-primary bg-gradient">Stock In</span>
+                                            {% if stock.type.id == 1 %}
+                                                <span class="badge px-3 rounded-pill bg-success bg-gradient">{{stock.type.name}}</span>
                                             {% else %}
-                                                <span class="badge px-3 rounded-pill bg-danger bg-gradient">Stock Out</span>
+                                                <span class="badge px-3 rounded-pill bg-danger bg-gradient">{{stock.type.name}}</span>
                                             {% endif %}
                                         </td>
                                         <td class="">{{ stock.user }}</td>
                                         <td class="text-center">
-                                            {% if stock.type == '1' %}
+                                            {% if stock.type.id == 1 %}
                                                 <a class="btn btn-outline-info btn-sm edit-data" href="javascript:void(0)" data-id="{{ stock.pk }}" title="Edit">
                                                     Edit
                                                 </a>
