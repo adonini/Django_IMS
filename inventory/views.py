@@ -5,7 +5,7 @@ from django.views.generic import TemplateView, View, CreateView
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from .forms import UserRegisterForm, AddItemForm, AddStockForm, AddPurchaseForm
-from .models import StockItem, Item, Category, Producer, Purchase
+from .models import StockItem, Item, Category, Producer, Location, Zone, Purchase
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 #from django.shortcuts import get_object_or_404
@@ -212,10 +212,18 @@ class ManageStock(LoginRequiredMixin, View):
         if pk is None:
             context['page_title'] = "Add New Stock"
             context['stock'] = {}
+            locations = Location.objects.all()
+            zones = Zone.objects.all()
+            context['locations'] = locations
+            context['zones'] = zones
         else:
             context['page_title'] = "Manage New Stock"
             stock = Stock.objects.get(id=pk)
+            locations = Location.objects.all()
+            zones = Zone.objects.all()
             context['stock'] = stock
+            context['locations'] = locations
+            context['zones'] = zones
         return render(request, 'inventory/manage_stock.html', context)
 
 class Purchases(LoginRequiredMixin, View):
