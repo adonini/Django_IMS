@@ -13,13 +13,13 @@
         </div>
         <div class="card-body">
             <div class="container-fluid">
-                <table class="table table-bordered" id="item-list">
+                <table class="table table-striped" id="item-list">
                     <thead>
                         <tr class="bg-gradient bg-primary bg-opacity-50 text-light">
                             <th class="px-2 py-2 text-center">Order Number</th>
                             <th class="px-2 py-2 text-center">Product</th>
-							<th class="px-2 py-2 text-center">Date</th>
-                            <th class="px-2 py-2 text-center">Due Date</th>
+							<th class="px-2 py-2 text-center">Order Date</th>
+                            <th class="px-2 py-2 text-center">Delivery Date</th>
 							<th class="px-2 py-2 text-center">Producer</th>
 							<th class="px-2 py-2 text-center">Quantity</th>
 							<th class="px-2 py-2 text-center">Price per Item</th>
@@ -36,25 +36,18 @@
 							<td class="align-middle text-center">{{ element.due_date }}</td>
 							<td class="align-middle text-center">{{ element.item.producer.name }}</td>
 							<td class="align-middle text-center">{{ element.quantity }}</td>
-							<td class="align-middle text-center">{{ element.price_per_item }}</td>
+							<td class="align-middle text-center">{{ element.price_per_item }} €</td>
 							<td class="align-middle text-center">{{ element.calculateAmount }} €</td>
 							<td class="align-middle text-center">
-                                {% if not element.received %}
-                                    <button type="button" class="btn btn-outline-info btn-sm edit-stock" href="javascript:void(0)" data-id="{{ item.pk }}" title="Recieve">
-                                        RECEIVE
-                                    </button>
-                                {% else %}
-                                    <button type="button" class="btn btn-outline-info btn-sm edit-stock" href="javascript:void(0)" data-id="{{ item.pk }}" title="Recieved">
-                                        RECEIVED
-                                    </button>
-                                {% endif %}
-
+                                <button type="button" class="btn btn-outline-primary btn-sm edit-purchase" href="javascript:void(0)" data-id="{{ element.pk }}" title="Manage">
+                                    MANAGE
+                                </button>
                                 {% if element.tracking_url is not None and element.tracking_urls != "" %}
-                                    <a class="btn btn-outline-primary btn-sm" href="{{element.tracking_url}}" target="_blank" data-id="{{ item.pk }}" title="Tracking">
+                                    <a class="btn btn-outline-info btn-sm" href="{{element.tracking_url}}" target="_blank" title="Tracking">
                                         TRACKING
                                     </a>
                                 {% else %}
-                                    <button type="button" class="btn btn-outline-info btn-sm edit-stock" href="javascript:void(0)" title="Tracking">
+                                    <button type="button" class="btn btn-outline-dark btn-dark btn-sm text-white" href="javascript:void(0)" title="Tracking">
                                         TRACKING
                                     </button>
                                 {% endif %}
@@ -74,6 +67,9 @@
     $(function() {
         $('#add_new').click(function() {
             uni_modal('<i class="fa fa-plus"></i> New Purchase', '{% url "manage-purchase" %}', 'modal-md')
+        })
+        $('.edit-purchase').click(function() {
+            uni_modal('<i class="fa fa-edit"></i> Edit Purchase', '{% url "manage-purchase" %}' + $(this).attr('data-id'), 'modal-md')
         })
         //remove the default 'Search' text for all DataTable search boxes
         $.extend(true, $.fn.dataTable.defaults, {

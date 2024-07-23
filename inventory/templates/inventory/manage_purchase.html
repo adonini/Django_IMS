@@ -16,7 +16,7 @@
             </select>
         </div>
         <div class="form-group mb-3">
-            <label for="due_date" class="control-label">Due Date</label>
+            <label for="due_date" class="control-label">Delivery Date</label>
             <input type="datetime-local" class="form-control rounded-0" name="due_date" id="due_date" value="{{ purchase.due_date|date:'Y-m-d\\TH:i' }}" required>
         </div>
         <div class="form-group mb-3">
@@ -31,9 +31,74 @@
             <label for="tracking_url" class="control-label">Tracking URL</label>
             <input type="text" class="form-control rounded-0" id="tracking_url" name="tracking_url" value="{{ purchase.tracking_url }}">
         </div>
+        {% if purchase.id is not None %}
+            <div class="buttons w-100 d-flex justify-content-center">
+                {% if not purchase.received %}
+                <button type="button" class="btn btn-outline-info btn-sm" id="receive" href="javascript:void(0)" data-id="{{ purchase.pk }}" title="Recieve">
+                    RECEIVE
+                </button>
+                {% else %}
+                <button type="button" class="btn btn-outline-info btn-sm" id="receive" href="javascript:void(0)" title="Recieved">
+                    RECEIVED
+                </button>
+                {% endif %}
+                <button type="button" class="btn btn-outline-primary btn-sm ms-5 delete-purchase" href="javascript:void(0)" data-id="{{ purchase.pk }}" title="Delete">
+                    DELETE
+                </button>
+            </div>
+        {% endif %}
     </form>
 </div>
 <script>
+    $(function() {
+        $('.delete-purchase').click(function() {
+            console.log($(this).attr('data-id'))
+            _conf("Do you want to delete this Purchase permanently?", "delete_purchase", [$(this).attr('data-id')])
+        })
+        $('#receive').click(function() {
+            var _this = $('#purchase-form')
+            $('.err-msg').remove();
+            var el = $('<div>')
+            el.addClass("alert alert-danger err-msg")
+            el.hide()
+            if (_this[0].checkValidity() == false) {
+                _this[0].reportValidity();
+                return false;
+            }
+            start_loader();
+            $.ajax({
+                url: "{% url 'receive-purchase' %}",
+                data: new FormData($('#purchase-form')[0]),
+                cache: false,
+                contentType: false,
+                processData: false,
+                method: 'POST',
+                type: 'POST',
+                dataType: 'json',
+                error: err => {
+                    console.log(err)
+                    alert("An error occured ", 'error');
+                    end_loader();
+                },
+                success: function(resp) {
+                    if (typeof resp == 'object' && resp.status == 'success') {
+                        el.removeClass("alert alert-danger err-msg ")
+                        location.reload()
+                    } else if (resp.status == 'failed' && !!resp.msg) {
+                        el.html(resp.msg)
+                    } else {
+                        el.text("An error occured ", 'error');
+                        end_loader();
+                        console.err(resp)
+                    }
+                    _this.prepend(el)
+                    el.show('slow')
+                    $("html, body, .modal ").scrollTop(0);
+                    end_loader()
+                }
+            })
+        })
+    })
     $(document).ready(function() {
         $('#purchase-form').submit(function(e) {
             // preventing from page reload and default actions
@@ -81,4 +146,37 @@
             })
         })
     })
+    function delete_purchase($id) {
+        start_loader();
+        var _this = $(this)
+        $('.err-msg').remove();
+        var el = $('<div>')
+        el.addClass("alert alert-danger err-msg")
+        el.hide()
+        $.ajax({
+            url: '{% url "delete-purchase" %}',
+            headers: {'X-CSRFToken': "{{csrf_token}}"},
+            method: 'POST',
+            data: {id: $id},
+            dataType: 'json',
+            error: err => {
+                console.log(err)
+                el.text('An error occurred.')
+                el.show('slow')
+                end_loader()
+            },
+            success: function(resp) {
+                if (resp.status == 'success') {
+                    location.reload()
+                } else if (!!resp.msg) {
+                    el.text('An error occurred.')
+                    el.show('slow')
+                } else {
+                    el.text('An error occurred.')
+                    el.show('slow')
+                }
+                end_loader()
+            }
+        })
+    }
 </script>

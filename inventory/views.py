@@ -12,9 +12,11 @@ from django.contrib import messages
 #from django.http import HttpResponse
 from django.http import JsonResponse
 from django.core import serializers
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpRequest
 import json
 import logging
+from django.test import RequestFactory
+
 
 logger = logging.getLogger(__name__)
 
@@ -179,6 +181,7 @@ class AddStock(LoginRequiredMixin, View):
                 stock = None
             print('stock: ', stock)
             if stock is None:
+                logger.debug(request.POST)
                 form = AddStockForm(request.POST)
             else:
                 form = AddStockForm(request.POST, instance=stock)
@@ -257,7 +260,7 @@ class AddPurchase(LoginRequiredMixin, View):
                 form = AddPurchaseForm(request.POST, instance=purchase)
             if form.is_valid():
                 NewPurchase = form.save()
-                NewPurchase.user = currentUser
+                NewPurchase.creator_user = currentUser
                 NewPurchase.save()
                 messages.success(request, 'Purchase has been saved successfully!')
                 resp['status'] = 'success'
@@ -268,4 +271,48 @@ class AddPurchase(LoginRequiredMixin, View):
         else:
             resp['msg'] = 'No data has been sent.'
         return HttpResponse(json.dumps(resp), content_type='application/json')
+    
+class ReceivePurchase(LoginRequiredMixin, View):
+    def post(self, request):
+        resp = {'status': 'failed', 'msg': ''}
+        currentUser = User.objects.get(username=request.user)
+        if request.method == 'POST':
+            logger.debug(request.POST)
+            purchase = Purchase.objects.get(pk=request.POST['id'])
+            """ purchase.received = 1
+            purchase.reciever_user = currentUser
+            purchase.save() """ #Uncomment this logic to change the re
+            logger.debug(purchase)
+            #View this in the meeting to know how to manage the logic to automatically add the stock when the purchase is received.
+            stock_data={
+                'id': [''], 
+                'user': [currentUser], 
+                'item': [request.POST['item']], 
+                'type': ['1'], # This should maybe be a request to stock types to be sure? or maybe not needed since the id 1 is always stock in
+                'quantity': [request.POST['quantity']], 
+                'reorder_point': ['1'], #What is this for?
+                'area': ['Mirca'], #How to request this information on purchase modal?
+                'shelf': ['Top-33'], #How to request this information on purchase modal?
+                'price': [request.POST['price_per_item']]
+            }
+        else:
+             resp['msg'] = 'No data has been sent.'
+        return HttpResponse(json.dumps(resp), content_type='application/json')
+    
+class DeletePurchase(LoginRequiredMixin, View):
+    def post(self, request):
+        resp = {'status': 'failed', 'msg': ''}
+
+        if request.method == 'POST':
+            try:
+                purchase = Purchase.objects.get(id=request.POST['id'])
+                purchase.delete()
+                messages.success(request, 'Purchase has been deleted successfully!')
+                resp['status'] = 'success'
+            except Exception as err:
+                resp['msg'] = 'Purchase has failed to delete!'
+                print(err)
+        else:
+            resp['msg'] = 'Purchase has failed to delete'
+        return HttpResponse(json.dumps(resp), content_type="application/json")
 

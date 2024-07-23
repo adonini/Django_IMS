@@ -125,7 +125,8 @@ class Purchase(models.Model):
     price_per_item = models.FloatField(default=0)
     tracking_url = models.CharField(max_length=255, blank=True, null=True)
     received = models.BooleanField(default=0)
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
+    creator_user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, related_name='created_purchases')
+    receiver_user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, related_name='received_purchases')
 
     class Meta:
         db_table = 'purchases'
