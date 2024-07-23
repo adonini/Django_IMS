@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
-from .models import Item, Category, StockItem, Producer, StockOPTypes
+from .models import Item, Category, StockItem, Producer, StockOPTypes, Location, Zone
 
 
 class UserRegisterForm(UserCreationForm):
@@ -37,6 +37,8 @@ class AddStockForm(forms.ModelForm):
     item = forms.CharField(max_length=30)
     quantity = forms.CharField(max_length=250)
     type = forms.ModelChoiceField(queryset=StockOPTypes.objects.all(), initial=0, required=True)
+    area = forms.ModelChoiceField(queryset=Location.objects.all(), initial=0, required=False)
+    shelf = forms.ModelChoiceField(queryset=Zone.objects.all(), initial=0, required=False)
 
     class Meta:
         model = StockItem

@@ -69,8 +69,8 @@ class StockItem(models.Model):
     item = models.ForeignKey(Item, on_delete=models.SET_NULL, blank=True, null=True)  #on_delete=models.CASCADE)
     quantity = models.FloatField(default=0)
     reorder_point = models.IntegerField(default=0)
-    area = models.CharField(max_length=100, blank=True, null=True)
-    shelf = models.CharField(max_length=100, blank=True, null=True)
+    area = models.ForeignKey('Location', on_delete=models.SET_NULL, blank=True, null=True)
+    shelf = models.ForeignKey('Zone', on_delete=models.SET_NULL, blank=True, null=True)
     #broken_units = models.IntegerField(default=0)
     type = models.ForeignKey(StockOPTypes, on_delete=models.CASCADE)
     price = models.FloatField(default=0)
@@ -98,8 +98,6 @@ class Category(models.Model):
     def __str__(self):
         return self.name
         
-
-
 class Producer(models.Model):
     name = models.CharField(max_length=200)
     address = models.CharField(max_length=255, blank=True, null=True)
@@ -114,7 +112,44 @@ class Producer(models.Model):
     def __str__(self):
         return self.name
     
+class Purchase(models.Model):
+    order_number = models.CharField(max_length=200)
+    item = models.ForeignKey(Item, on_delete=models.SET_NULL, blank=True, null=True)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(auto_now=True)
+    due_date = models.DateTimeField(default=date_created)
+    quantity = models.FloatField(default=0)
+    price_per_item = models.FloatField(default=0)
+    tracking_url = models.CharField(max_length=255, blank=True, null=True)
+    received = models.BooleanField(default=0)
+    creator_user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, related_name='created_purchases')
+    receiver_user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, related_name='received_purchases')
 
+    class Meta:
+        db_table = 'purchases'
+
+    def __str__(self):
+        return self.order_number
+    
+    def calculateAmount(self):
+        return float(self.quantity) * float(self.price_per_item)
+        
+class Location(models.Model):
+    name = models.CharField(max_length=200)
+    class Meta:
+        db_table = 'locations'
+
+    def __str__(self):
+        return self.name
+    
+class Zone(models.Model):
+    name = models.CharField(max_length=200)
+    location = models.ForeignKey(Location, on_delete=models.CASCADE)
+    class Meta:
+        db_table = 'zones'
+
+    def __str__(self):
+        return self.name
 
 
 

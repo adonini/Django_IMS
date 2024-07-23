@@ -14,12 +14,22 @@
             <input type="number" step="any" class="form-control rounded-0 text-end" id="reorder_point" name="reorder_point" value="{{ stock.reorder_point }}" required> <!-- This is required but there is a display none and cant be fulfilled -->
         </div>
         <div class="form-group mb-3 ">
-            <label for="area" class="control-label">Area</label>
-            <input type="text" step="any" class="form-control rounded-0 text-end" id="area" name="area" value="{{ stock.area }}" required>
+            <label for="location" class="control-label">Area</label>
+            <select class="form-control rounded-0" name="location" id="location">
+                <option value="" {% if not stock.area %} selected {% endif %}>-----</option>
+                {% for location in locations %}
+                    <option value="{{ location.id }}" {% if location.id == stock.location.id %} selected {% endif %}>{{ location.name }}</option>
+                {% endfor %}
+            </select>
         </div>
         <div class="form-group mb-3 ">
-            <label for="shelf" class="control-label">Shelf</label>
-            <input type="text" step="any" class="form-control rounded-0 text-end" id="shelf" name="shelf" value="{{ stock.shelf }}" required>
+            <label for="zone" class="control-label">Zone</label>
+            <select class="form-control rounded-0" name="zone" id="zone">
+                <option value="" {% if not stock.area %} selected {% endif %}>-----</option>
+                {% for zone in zones %}
+                    <option value="{{ zone.id }}" father="{{zone.location.id}}" {% if zone.id == stock.zone.id %} selected {% endif %}>{{ zone.name }}</option>
+                {% endfor %}
+            </select>
         </div>
         <div class="form-group mb-3 ">
             <label for="price" class="control-label">Price</label>
@@ -28,7 +38,6 @@
     </form>
 </div>
 {% comment %} {% load crispy_forms_tags %}
-
 <div class="container-fluid">
     <form method="post" id="stock-form">
         {% csrf_token %}
@@ -36,6 +45,16 @@
     </form>
 </div> {% endcomment %}
 <script>
+    document.querySelector('#location').addEventListener('change', (e)=>{
+        zone = document.querySelector('#zone')
+        zone_childs = [...zone.children]
+        //This is still working progress need more testing
+        zone_childs.forEach(child => {
+            if(child.father != e.value){
+                child.setAttribute('hidden', true)
+            }
+        });
+    })
     $(function() {
         $('#stock-form').submit(function(e) {
             e.preventDefault();
