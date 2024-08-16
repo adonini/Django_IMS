@@ -5,7 +5,7 @@ from django.views.generic import TemplateView, View, CreateView
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from .forms import UserRegisterForm, AddItemForm, AddStockForm
-from .models import StockItem, Item, Category, Producer
+from .models import Stock, Item, Category, Producer
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 #from django.shortcuts import get_object_or_404
@@ -57,7 +57,7 @@ class Item_list(LoginRequiredMixin, View):
     def get(self, request):
         context['page_title'] = 'Item list'
         items = Item.objects.all()
-        stocks = StockItem.objects.all()
+        stocks = Stock.objects.all()
         context['items'] = items
         context['stocks'] = stocks
         return render(request, 'inventory/item_list.html', context)
@@ -71,7 +71,7 @@ class Item_record(LoginRequiredMixin, View):
             return redirect('item_list')
         else:
             item = Item.objects.get(id=pk)
-            stocks = StockItem.objects.filter(item=item).all()
+            stocks = Stock.objects.filter(item=item).all()
             context['item'] = item
             context['stocks'] = stocks
             return render(request, 'inventory/item_record.html', context)
@@ -145,7 +145,7 @@ class Stock(LoginRequiredMixin, View):
             context['items'] = items
         else:
             item = Item.objects.get(id=pk)
-            stocks = StockItem.objects.filter(item=item).all()
+            stocks = Stock.objects.filter(item=item).all()
             context['items'] = item
             context['stocks'] = stocks
         print(context)
@@ -160,7 +160,7 @@ class Stock_record(LoginRequiredMixin, View):
             return redirect('stock')
         else:
             item = Item.objects.get(id=pk)
-            stocks = StockItem.objects.filter(item=item).order_by('-date_created').all() #This orders the item stock movements from most recent to older
+            stocks = Stock.objects.filter(item=item).order_by('-date_created').all() #This orders the item stock movements from most recent to older
             context['item'] = item
             context['stocks'] = stocks
             return render(request, 'inventory/stock_record.html', context)
