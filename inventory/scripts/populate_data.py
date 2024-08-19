@@ -1,6 +1,7 @@
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
 from ..models import Stock_Type, Item_status, Purchase_status, Location, Zone, Telescope, Unit, Payment_sources, Category, Sub_category, Group
+from django.contrib.auth.models import Group as G, Permission
 
 def run():
 
@@ -193,6 +194,13 @@ def run():
                                "PBS_code": "8.1.1.3.2"},
                               ]}]}
     ]
+
+    admin_groups_entries = [
+        {"name": "admin"},
+        {"name": "technician"},
+        {"name": "user"},
+    ]
+
     print("Adding data into DB...")
 
     if not Stock_Type.objects.exists():
@@ -251,5 +259,23 @@ def run():
                     Group.objects.get_or_create(**group)
     else:
         print("There was data on category, sub-category or group.")
+
+    if not G.objects.exists():
+        for index, entry in enumerate(admin_groups_entries):
+            group, success = G.objects.get_or_create(**entry)
+            if index == 0:
+                all_permission = Permission.objects.all()
+                group.permissions.set(all_permission)
+            elif index == 1:
+                view_permissions = Permission.objects.filter(codename__startswith='view_')
+                other_permissions = Permission.objects.filter(codename__in=["add_item", "change_item", "add_stock", "change_stock"])
+                group.permissions.set(view_permissions)
+                group.permissions.add(*other_permissions)
+            else:
+                view_permissions = Permission.objects.filter(codename__startswith='view_')
+                group.permissions.set(view_permissions)
+
+    else:
+        print("There was data on auth group.")
 
     print("Done!")
