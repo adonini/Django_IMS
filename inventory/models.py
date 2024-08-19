@@ -5,6 +5,7 @@ from django.dispatch import receiver
 
 class Category(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
+    PBS_code = models.CharField(max_length=25, blank=True, null=True)
     description = models.TextField(default='-', null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -14,6 +15,7 @@ class Category(models.Model):
 
 class Sub_category(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
+    PBS_code = models.CharField(max_length=25, blank=True, null=True)
     description = models.TextField(default='-', null=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -33,10 +35,11 @@ class Unit(models.Model):
 
 class Group(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
+    PBS_code = models.CharField(max_length=25, blank=True, null=True)
     description = models.TextField(default='-', null=True)
     sub_category = models.ForeignKey(Sub_category, on_delete=models.CASCADE, null=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True)
-    image = models.CharField(max_length=150, blank=True, null=True)
+    image = models.ImageField(upload_to='imgs/', blank=True, null=True)
     minimum_stock = models.SmallIntegerField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -61,7 +64,7 @@ class Producer(models.Model):
 class Telescope(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
     description = models.TextField(default='-', null=True)
-    image = models.CharField(max_length=150, blank=True, null=True)
+    image = models.ImageField(upload_to='imgs/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -1,6 +1,20 @@
 from django.contrib import admin
-from .models import Stock, Item, Producer
+from .models import Stock, Item, Producer, Category, Sub_category, Telescope, Supplier, Unit, Group, Item_status, Stock_Type, Location, Zone, Payment_sources, Purchase_status, Purchase_group, Purchase 
 
 admin.site.register(Producer)
-admin.site.register(Item)
 admin.site.register(Stock)
+admin.site.register(Stock_Type)
+admin.site.register(Item)
+admin.site.register(Category)
+admin.site.register(Sub_category)
+admin.site.register(Telescope)
+admin.site.register(Supplier)
+admin.site.register(Unit)
+admin.site.register(Group)
+admin.site.register(Item_status)
+admin.site.register(Location)
+admin.site.register(Zone)
+admin.site.register(Payment_sources)
+admin.site.register(Purchase_status)
+admin.site.register(Purchase_group)
+admin.site.register(Purchase)
