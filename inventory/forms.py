@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
-from .models import Item, Category, StockItem, Producer, StockOPTypes
+from .models import Item, Category, Stock, Producer, Stock_Type
 
 
 class UserRegisterForm(UserCreationForm):
@@ -13,13 +13,14 @@ class UserRegisterForm(UserCreationForm):
 
 
 class AddItemForm(forms.ModelForm):
-    category = forms.ModelChoiceField(queryset=Category.objects.all(), initial=0, required=False)  # to give the choice between already existing categories
     producer = forms.ModelChoiceField(queryset=Producer.objects.all(), initial=0, required=False)  # to give the choice between already existing categories
 
     class Meta:
         model = Item
-        fields = ['code', 'name', 'description', 'category', 'producer', 'model', 'serials']  # '__all__' if wanna get all the fields in the model
+        fields = '__all__'
+        #fields = ['code', 'name', 'description', 'category', 'producer', 'model', 'serials']  # '__all__' if wanna get all the fields in the model
 
+    # Here the code looks for an existing code same as the one inserted
     def clean_code(self):
         id = self.instance.id if self.instance.id else 0
         code = self.cleaned_data['code']
@@ -35,19 +36,18 @@ class AddItemForm(forms.ModelForm):
 
 class AddStockForm(forms.ModelForm):
     item = forms.CharField(max_length=30)
-    quantity = forms.CharField(max_length=250)
-    type = forms.ModelChoiceField(queryset=StockOPTypes.objects.all(), initial=0, required=True)
+    type = forms.ModelChoiceField(queryset=Stock_Type.objects.all(), initial=0, required=True)
 
     class Meta:
-        model = StockItem
-        fields = ['item', 'quantity', 'area', 'shelf', 'type', 'price']
+        model = Stock
+        fields = '__all__'
+        #fields = ['item', 'quantity', 'area', 'shelf', 'type', 'price']
+
 
     def clean_item(self):
         pid = self.cleaned_data['item']
-        print('PID: ', pid)
         try:
             item = Item.objects.get(id=pid)
-            print(item)
             return item
         except:
             raise forms.ValidationError("Item is not valid")
