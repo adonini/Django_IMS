@@ -4,8 +4,8 @@ from django.views.generic import TemplateView, View, CreateView
 #from django.views.generic.detail import DetailView
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
-from .forms import UserRegisterForm, AddItemForm, AddStockForm
-from .models import Stock, Item, Category, Producer
+from .forms import UserRegisterForm, AddItemForm, AddStockForm, AddPurchaseForm, AddPurchaseGroupForm
+from .models import Item, Category, Producer, Stock
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 #from django.shortcuts import get_object_or_404
@@ -22,12 +22,10 @@ context = {
     'page_title': 'File Management System',
 }
 
-
 def logout_user(request):
     logout(request)
     messages.success(request, "You Have Been Logged Out...")
     return redirect('index')
-
 
 class SignUpView(View):
     def get(self, request):
@@ -48,10 +46,8 @@ class SignUpView(View):
 
         return render(request, 'inventory/signup.html', {'form': form})
 
-
 class Index(TemplateView):
     template_name = 'inventory/index.html'
-
 
 class Item_list(LoginRequiredMixin, View):
     def get(self, request):
@@ -61,7 +57,6 @@ class Item_list(LoginRequiredMixin, View):
         context['items'] = items
         context['stocks'] = stocks
         return render(request, 'inventory/item_list.html', context)
-
 
 class Item_record(LoginRequiredMixin, View):
     def get(self, request, pk=None):
@@ -75,7 +70,6 @@ class Item_record(LoginRequiredMixin, View):
             context['item'] = item
             context['stocks'] = stocks
             return render(request, 'inventory/item_record.html', context)
-
 
 class AddItem(LoginRequiredMixin, View):
     def post(self, request):
@@ -104,7 +98,6 @@ class AddItem(LoginRequiredMixin, View):
             resp['msg'] = 'No data has been sent.'
         return HttpResponse(json.dumps(resp), content_type='application/json')
 
-
 class ManageItem(LoginRequiredMixin, View):
     def get(self, request, pk=None):
         context['page_title'] = "Manage Item"
@@ -116,7 +109,6 @@ class ManageItem(LoginRequiredMixin, View):
             context['categories'] = Category.objects.all()
             context['producers'] = Producer.objects.all()
         return render(request, 'inventory/manage_item.html', context)
-
 
 class DeleteItem(LoginRequiredMixin, View):
     def post(self, request):
@@ -135,8 +127,7 @@ class DeleteItem(LoginRequiredMixin, View):
             resp['msg'] = 'Item has failed to delete'
         return HttpResponse(json.dumps(resp), content_type="application/json")
 
-
-class Stock(LoginRequiredMixin, View):
+class Stock_list(LoginRequiredMixin, View):
     def get(self, request, pk=None):
         context['page_title'] = 'Stock'
         print(pk)
@@ -151,7 +142,6 @@ class Stock(LoginRequiredMixin, View):
         print(context)
         return render(request, 'inventory/stock.html', context)
 
-
 class Stock_record(LoginRequiredMixin, View):
     def get(self, request, pk=None):
         context['page_title'] = 'Stock Detail'
@@ -164,7 +154,6 @@ class Stock_record(LoginRequiredMixin, View):
             context['item'] = item
             context['stocks'] = stocks
             return render(request, 'inventory/stock_record.html', context)
-
 
 class AddStock(LoginRequiredMixin, View):
     def post(self, request):
@@ -195,7 +184,6 @@ class AddStock(LoginRequiredMixin, View):
             print('bye bye')
             resp['msg'] = 'No data has been sent.'
         return HttpResponse(json.dumps(resp), content_type='application/json')
-
 
 class ManageStock(LoginRequiredMixin, View):
     def get(self, request, pid=None, pk=None):

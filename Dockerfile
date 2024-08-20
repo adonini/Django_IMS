@@ -1,7 +1,7 @@
 FROM python:3
 ENV PYTHONBUFFERED=1
 
-RUN apt-get update && apt-get install -y netcat-openbsd
+RUN apt-get update && apt-get install -y netcat-openbsd postgresql-client
 
 WORKDIR /code
 
