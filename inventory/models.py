@@ -103,11 +103,11 @@ class Item(models.Model):
         stocks = Stock.objects.filter(item=self)
         stockIn = 0
         stockOut = 0
-        for stock in stocks:
-            if stock.type.id == 1:
-                stockIn = int(stockIn) + int(stock.quantity)
+        for elements in stocks:
+            if elements.type.id == 1:
+                stockIn = int(stockIn) + int(elements.quantity)
             else:
-                stockOut = int(stockOut) + int(stock.quantity)
+                stockOut = int(stockOut) + int(elements.quantity)
         available = stockIn - stockOut
         return available
     
@@ -141,8 +141,9 @@ class Zone(models.Model):
     
 class Stock(models.Model):
     zone= models.ForeignKey(Zone, on_delete=models.SET_NULL, null=True)
-    type = models.ForeignKey(Stock_Type, on_delete=models.SET_NULL, null=True)
-    item = models.ForeignKey(Item, on_delete=models.CASCADE, blank=True, null=True) 
+    stock_type = models.ForeignKey(Stock_Type, on_delete=models.SET_NULL, null=True)
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, blank=True, null=True)
+    quantity = models.IntegerField(default=1)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)  
@@ -206,6 +207,7 @@ class Supplier(models.Model):
 class Purchase(models.Model):
     price_per_item = models.FloatField(blank=True, null=True)
     item = models.ForeignKey(Item, on_delete=models.CASCADE, null=True)
+    quantity = models.IntegerField(default=1)
     purchase_group = models.ForeignKey(Purchase_group, on_delete=models.CASCADE)
     supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  db:
+  postgres:
     image: postgres:14.10
     restart: always
     container_name: postgresql
@@ -23,7 +23,7 @@ services:
     ports:
       - "5431:80"
     depends_on:
-      - db
+      - postgres
 
   web:
     build: .
@@ -38,7 +38,7 @@ services:
       - POSTGRES_USER=LST
       - POSTGRES_PASSWORD=LST
     depends_on:
-      - db
+      - postgres
 
 #Change this to host folder on linux/unix OS, on windows there is trouble with folder permission and Docker volume is recomended (That is why I used it this way)
 volumes:

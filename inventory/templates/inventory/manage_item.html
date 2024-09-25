@@ -2,29 +2,25 @@
     <form action=" " id="item-form">
         {% csrf_token %}
         <input type="hidden" name="id" value="{{ item.id }}">
-        <div class="form-group mb-3 ">
-            <label for="code" class="control-label">Item Code</label>
-            <input type="text" class="form-control rounded-0" id="code" name="code" value="{{ item.code }}" required>
-        </div>
-        <div class="form-group mb-3 ">
-            <label for="name" class="control-label">Item Name</label>
-            <input type="text" class="form-control rounded-0" id="name" name="name" value="{{ item.name }}" required>
-        </div>
         <div class="form-group mb-3">
-            <label for="description" class="control-label">Description</label>
-            <textarea class="form-control rounded-0" name="description" id="description" rows="5" required>{{ item.description }}</textarea>
-        </div>
-        <div class="form-group mb-3">
-            <label for="category" class="control-label">Category</label>
-            <select class="form-control rounded-0" name="category" id="category">
-                <option value="" {% if not item.category %} selected {% endif %}>-----</option>
-                {% for category in categories %}
-                    <option value="{{ category.id }}" {% if category.id == item.category.id %} selected {% endif %}>{{ category.name }}</option>
+            <label for="group" class="control-label">Group</label>
+            <select class="form-control rounded-0" name="group" id="group">
+                <option value="" {% if not item.group %} selected {% endif %}>-----</option>
+                {% for group in groups %}
+                    <option value="{{ group.id }}" {% if group.id == item.group.id %} selected {% endif %}>{{ group.name }}</option>
                 {% endfor %}
             </select>
         </div>
         <div class="form-group mb-3 ">
-            <label for="producer" class="control-label">Producer</label>
+            <label for="serial_number" class="control-label">Serial Number</label>
+            <input type="text" class="form-control rounded-0" id="serial_number" name="serial_number" value="{{ item.serial_number }}" required>
+        </div>
+        <div class="form-group mb-3 ">
+            <label for="code" class="control-label">Code</label>
+            <input type="text" class="form-control rounded-0" id="code" name="code" value="{{ item.code }}" required>
+        </div>
+        <div class="form-group mb-3 ">
+            <label for="status" class="control-label">Producer</label>
             <select class="form-control rounded-0" name="producer" id="producer">
                 <option value="" {% if not item.producer %} selected {% endif %}>-----</option>
                 {% for producer in producers %}
@@ -33,12 +29,34 @@
             </select>
         </div>
         <div class="form-group mb-3 ">
-            <label for="model" class="control-label">Model</label>
-            <input type="text" class="form-control rounded-0" id="model" name="model" value="{{ item.model }}">
+            <label for="price" class="control-label">Price</label>
+            <input type="number" step="any" class="form-control rounded-0" id="price" name="price" value="{{ item.price }}">
         </div>
         <div class="form-group mb-3 ">
-            <label for="serials" class="control-label">Serials</label>
-            <input type="text" class="form-control rounded-0" id="serials" name="serials" value="{{ item.split_serials }}">
+            <label for="expiration_date" class="control-label">Expiration date</label>
+            <input type="date" class="form-control rounded-0" id="expiration_date" name="expiration_date" value="{{ item.expiration_date }}">
+        </div>
+        <div class="form-group mb-3 ">
+            <label for="datasheet_url" class="control-label">Datasheet Url</label>
+            <input type="text" class="form-control rounded-0" id="datasheet_url" name="datasheet_url" value="{{ item.datasheet_url }}">
+        </div>
+        <div class="form-group mb-3 ">
+            <label for="status" class="control-label">Status</label>
+            <select class="form-control rounded-0" name="status" id="status">
+                <option value="" {% if not item.status %} selected {% endif %}>-----</option>
+                {% for status in status %}
+                    <option value="{{ status.id }}" {% if status.id == item.status.id %} selected {% endif %}>{{ status.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group mb-3 ">
+            <label for="telescope" class="control-label">Telescope</label>
+            <select class="form-control rounded-0" name="telescope" id="telescope">
+                <option value="" {% if not item.telescope %} selected {% endif %}>-----</option>
+                {% for telescope in telescopes %}
+                    <option value="{{ telescope.id }}" {% if telescope.id == item.telescope.id %} selected {% endif %}>{{ telescope.name }}</option>
+                {% endfor %}
+            </select>
         </div>
     </form>
 </div>
