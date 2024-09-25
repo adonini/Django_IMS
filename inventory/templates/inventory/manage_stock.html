@@ -1,34 +1,65 @@
 <div class="container-fluid">
+    <p class="guide-message"></p>
     <form action=" " id="stock-form">
         {% csrf_token %}
-        <input type="hidden" name="id" value="{{ stock.id }}">
+        <input type="hidden" name="id" value="{{ stock.pk }}">
         <input type="hidden" name="user" value="{{ stock.user }}">
-        <input type="hidden" name="item" value="{{ pid }}">
-        <input type="hidden" name="type" value="1">
-        <div class="form-group mb-3 ">
-            <label for="quantity" class="control-label">Quantity</label>
-            <input type="number" step="any" class="form-control rounded-0 text-end" id="quantity" name="quantity" value="{{ stock.quantity }}" required>
+        {% if operation is not None %}
+            <input type="hidden" name="stock_type" value="{{operation}}">
+        {% endif %}
+
+            <div class="form-group mb-3 ">
+                <label for="item" class="control-label">Items</label>
+                {% if stock.item is None %}
+                    <select class="form-control rounded-0" name="item" id="item">
+                        {% if items|length > 1 %}
+                            <option value="All" {% if not stock.zone %} selected {% endif %} disabled>-----</option>
+                        {% endif %}
+                                {% for item in items %}
+                                    <option value="{{ item.id }}" {% if item.id == stock.item.id %} selected {% endif %}>{{item.group.name}} - {% if item.code is not None and item.code != '' %}{{item.code}}{% elif item.serial_number is not None and item.serial_number != '' %}{{item.serial_number}}{% else %}{{item.pk}}{% endif %}</option>
+                                {% endfor %}
+                    </select>
+                {% else %}
+                    <input type="text" id="item" value="{{stock.item.name}}" disabled>
+                {% endif %}
+            </div>
+        
+        <div class="form-group mb-3 {% if operation == 2 %} hidden {% endif %}">
+            <label for="zone" class="control-label">Zones</label>
+            <select class="form-control rounded-0" name="zone" id="zone">
+                {% if operation == 1 %}
+                    <option value="All" {% if not stock.zone %} selected {% endif %} disabled>-----</option>
+                {% endif %}
+                {% for zone in zones %}
+                    <option value="{{ zone.id }}" {% if zone.id == stock.zone.id %} selected {% endif %}> {{zone.location.name}} - {{ zone.name }}</option>
+                {% endfor %}
+            </select>
         </div>
-        <div class="form-group mb-3" id="reorder_point_container" style="display: none;">
-            <label for="reorder_point" class="control-label">Reorder Point</label>
-            <input type="number" step="any" class="form-control rounded-0 text-end" id="reorder_point" name="reorder_point" value="{{ stock.reorder_point }}" required> <!-- This is required but there is a display none and cant be fulfilled -->
+        <div class="optionalInputs hidden">
+            <p class="dark-text text-center mb-0">Please fill one or both of the fields below.</p>
+            <div class="form-group mb-3 ">
+                <label for="code" class="control-label">Code</label>
+                <input type="text" class="form-control rounded-0" pattern="^[A-Za-z]+-[A-Za-z0-9]+$" title="Please follow this format (... = Might be more characters, X = Letters): XX...-XX45..." id="code" name="code" value="{{ item.code }}" required>
+            </div>
+            <div class="form-group mb-3 ">
+                <label for="serial_number" class="control-label">Serial Number</label>
+                <input type="text" class="form-control rounded-0" id="serial_number" pattern=".{4,}" title="Minimum 4 characters" name="serial_number" value="{{ item.serial_number }}" required>
+            </div>
         </div>
-        <div class="form-group mb-3 ">
-            <label for="area" class="control-label">Area</label>
-            <input type="text" step="any" class="form-control rounded-0 text-end" id="area" name="area" value="{{ stock.area }}" required>
+        <div class="instalation hidden">
+            <label for="telescope">Instalation place</label>
+            <select class="form-control rounded-0" name="telescope" id="telescope">
+                <option value="0" selected disabled>-----</option>
+                <option value="None">None</option>
+                {% for telescope in telescopes %}
+                    <option value="{{telescope.id}}">{{telescope.telescope.name}} - {{telescope.name}}</option>
+                {% endfor %}
+            </select>
         </div>
-        <div class="form-group mb-3 ">
-            <label for="shelf" class="control-label">Shelf</label>
-            <input type="text" step="any" class="form-control rounded-0 text-end" id="shelf" name="shelf" value="{{ stock.shelf }}" required>
-        </div>
-        <div class="form-group mb-3 ">
-            <label for="price" class="control-label">Price</label>
-            <input type="number" step="any" class="form-control rounded-0 text-end" id="price" name="price" value="{{ stock.price }}" required>
-        </div>
+            <input type="number" step="any" class="form-control rounded-0 text-end" id="quantity" name="quantity" value="1" hidden required>
     </form>
 </div>
 {% comment %} {% load crispy_forms_tags %}
-
 <div class="container-fluid">
     <form method="post" id="stock-form">
         {% csrf_token %}
@@ -36,50 +67,142 @@
     </form>
 </div> {% endcomment %}
 <script>
-    $(function() {
-        $('#stock-form').submit(function(e) {
-            e.preventDefault();
-            var _this = $(this)
-            $('.err-msg').remove();
-            var el = $('<div>')
-            el.addClass("alert alert-danger err-msg")
-            el.hide()
-            if (_this[0].checkValidity() == false) {
-                _this[0].reportValidity();
-                return false;
-            }
-            start_loader();
-            $.ajax({
-                url: "{% url 'add-stock' %}",
-                data: new FormData($(this)[0]),
-                cache: false,
-                contentType: false,
-                processData: false,
-                method: 'POST',
-                type: 'POST',
-                dataType: 'json',
-                error: err => {
-                    console.log(err)
-                    alert("An error occured ", 'error');
-                    end_loader();
-                },
-                success: function(resp) {
-                    if (typeof resp == 'object' && resp.status == 'success') {
-                        el.removeClass("alert alert-danger err-msg ")
-                        location.reload()
-                    } else if (resp.status == 'failed' && !!resp.msg) {
-                        el.html(resp.msg)
-                    } else {
-                        el.text("An error occured ", 'error');
-                        end_loader();
-                        console.err(resp)
-                    }
-                    _this.prepend(el)
-                    el.show('slow')
-                    $("html, body, .modal ").scrollTop(0);
-                    end_loader()
+    if (typeof stock_info === 'undefined'){
+        let stock_info = {{ stock_data | safe }}
+        let operation = {{operation}}
+        let unStockedItems = {{ unStockedItems | safe }}
+        $(function() {
+            $('#stock-form').submit(function(e) {
+                e.preventDefault();
+                let codeInput = document.querySelector('#code')
+                let serialInput = document.querySelector('#serial_number')
+                if((operation == 1 && (codeInput.value.length > 0 || serialInput.value.length > 0)) || operation == 2){
+                    codeInput.removeAttribute('required')
+                    serialInput.removeAttribute('required')
                 }
+                var _this = $(this)
+                $('.err-msg').remove();
+                var el = $('<div>')
+                el.addClass("alert alert-danger err-msg")
+                el.hide()
+                if (_this[0].checkValidity() == false) {
+                    _this[0].reportValidity();
+                    return false;
+                }
+                start_loader();
+                $.ajax({
+                    url: "{% url 'add-stock' %}",
+                    data: new FormData($(this)[0]),
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    method: 'POST',
+                    type: 'POST',
+                    dataType: 'json',
+                    error: err => {
+                        console.log(err)
+                        alert("An error occured ", 'error');
+                        end_loader();
+                    },
+                    success: function(resp) {
+                        if (typeof resp == 'object' && resp.status == 'success') {
+                            el.removeClass("alert alert-success err-msg ")
+                            location.reload()
+                        } else if (resp.status == 'failed' && !!resp.msg) {
+                            el.html(resp.msg)
+                        } else {
+                            el.text("An error occured ", 'error');
+                            end_loader();
+                            console.err(resp)
+                        }
+                        _this.prepend(el)
+                        el.show('slow')
+                        $("html, body, .modal ").scrollTop(0);
+                        end_loader()
+                    }
+                })
             })
+            if(operation == 2){
+                let message = document.querySelector('.guide-message')
+                message.appendChild(document.createTextNode('Please select an item.'))
+                message.classList.add('mb-0')
+                let itemSelect = document.querySelector('#item')
+                let filteredEntries = stock_info.map(entry => entry.item);
+                Array.from(itemSelect.options).forEach(option => {
+                    if (filteredEntries.includes(parseInt(option.value))) {
+                                option.style.display = 'block'; 
+                            } else {
+                                option.style.display = 'none';  
+                            }
+                })
+                $('#item').on('change', function(e){
+                    let zoneSelect = document.querySelector('#zone')
+                    let table = $('#stock-list').DataTable();
+                    if(e.target.value != 'All'){
+                        let filteredZones = stock_info.filter(entry => entry.item == e.target.value).map(entry => entry.zone);
+                        let instalationDiv = document.querySelector('.instalation')
+                        let item_value  = e.target.options[e.target.selectedIndex].text.split(' - ')
+                        if(zoneSelect.parentNode.classList.contains('hidden')){
+                            zoneSelect.parentNode.classList.remove('hidden')
+                            if(instalationDiv.classList.contains('hidden')){
+                                instalationDiv.classList.remove('hidden')
+                            }
+                        }
+                        Array.from(zoneSelect.options).forEach(option => {
+                            if (filteredZones.includes(parseInt(option.value))) {
+                                let optionIndex = Array.from(zoneSelect.options).findIndex(opt => opt === option);
+                                zoneSelect.selectedIndex = optionIndex
+                                option.style.display = 'block'; 
+                            } else {
+                                option.style.display = 'none';  
+                            }
+                        })
+                        message.innerHTML = ''
+                        message.appendChild(document.createTextNode('You have changed the item, if this item is going to be installed please specify a telescope.'))
+                    }else{
+                        message.innerHTML = ''
+                        message.appendChild(document.createTextNode('Please select a item.'))
+                        Array.from(zoneSelect.options).forEach(option => {
+                            option.style.display = 'block';
+                        });
+                        if(!zoneSelect.parentNode.classList.contains('hidden')){
+                            zoneSelect.parentNode.classList.add('hidden')
+                        }
+                    }
+                })
+            }else if(operation == 1){
+                $('#item').on('change', function(e){
+                    let codeInput = document.querySelector('#code')
+                    let serialInput = document.querySelector('#serial_number')
+                    let foundItem = unStockedItems.filter(item => item.id == e.target.value)[0]
+                    console.log(unStockedItems)
+                    if(foundItem.code != null && foundItem.code != ""){
+                        codeInput.value = foundItem.code
+                    }else{
+                        codeInput.value = ""
+                    }
+                    if(foundItem.serial_number != null && foundItem.serial_number != ""){
+                        serialInput.value = foundItem.serial_number
+                    }else{
+                        serialInput.value = ""
+                    }
+                })
+                let zoneSelect = document.querySelector('#zone')
+                let optionalInputs = document.querySelector('.optionalInputs')
+                zoneSelect.addEventListener('change', (e)=>{
+                    if(e.target.value != 'All'){
+                        if(optionalInputs.classList.contains('hidden')){
+                            optionalInputs.classList.remove('hidden')
+                        }
+                    }else{
+                        if(!optionalInputs.classList.contains('hidden')){
+                            optionalInputs.classList.add('hidden')
+                        }
+                    }
+                })
+            }else{
+                
+            }
         })
-    })
+    }
 </script>

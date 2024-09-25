@@ -1,0 +1,51 @@
+{% load humanize %}
+{% load custom_tags %}
+<div class="purchaseContent" data-id="{{purchase_group.id}}">
+    <ul class="list-group list-group-flush ul-left">
+        <li class="list-group-item"><strong>Order Number</strong> <br> {{purchase_group.order_number}}</li>
+        <li class="list-group-item"><strong>Order Date</strong> <br> {{purchase_group.order_date | date:"d/m/Y"}}</li>
+        <li class="list-group-item"><strong>Entry Date</strong> <br> {{purchase_group.created_at | date:"d/m/Y"}}</li>
+        <li class="list-group-item"><strong>Supplier</strong> <br> {{purchase_group.supplier.name}}</li>
+        <li class="list-group-item"><strong>Expected Delivery Date</strong> <br> {{purchase_group.expected_delivery_date | date:"d/m/Y"}}</li>
+        <li class="list-group-item"><strong>Standard Lead Time</strong> <br> {{purchase_group.standard_lead_time}}</li>
+    </ul>
+    <ul class="list-group list-group-flush ul-right">
+        <li class="list-group-item"><strong>Amount</strong> <br> {{purchase_group.calculate_amount}}</li>
+        <li class="list-group-item"><strong>Shipping Cost</strong> <br> {{purchase_group.shipping_cost}}</li>
+        <li class="list-group-item"><strong>Payment Source</strong> <br> {% if purchase_group.payment is not None %}{{purchase_group.payment.name}}{% else %}
+            Unknown{% endif %}</li>
+        <li class="list-group-item"><strong>Status</strong> <br> <div class="{{purchase_group.status.name|lower}}">{{purchase_group.status.name}}</div></li>
+        <li class="list-group-item"><strong>Delivery Date</strong> <br> {% if purchase_group.delivery_date is not None %}{{purchase_group.delivery_date | date:"d/m/Y"}}{% else %}{{purchase_group.delivery_date}}{% endif %}</li>
+    </ul>
+</div>
+<h4>Items Purchased</h4>
+<table class="table table-sm table-responsive table-hover" style="width:100%" id="purchase-items"> {% comment %} display compact {% endcomment %}
+    <thead class="">
+        <tr class="">
+            <th class="text-center dark-text">#</th>
+            <th class="text-center dark-text">Item</th>
+            <th class="text-center dark-text">Price</th>
+            {% if user|has_group:"admin" or user|has_group:"technician" %}
+                {% if purchase_group.status.name|lower != 'received' %}
+                    <th class="text-center dark-text">Actions</th>
+                {% endif %}
+            {% endif %}
+
+        </tr>
+    </thead>
+    <tbody>
+        {% for purchase in purchases %}
+            <tr>
+                <td class="align-canter text-center light-text">{{ forloop.counter }}</td>
+                <td class="align-canter text-center light-text" id="{{purchase.item.id}}">{{purchase.item.group.name}}</td>
+                <td class="align-canter text-center light-text">{{purchase.price_per_item}}</td>
+                {% if user|has_group:"admin" or user|has_group:"technician" %}
+                    {% if purchase_group.status.name|lower != 'received' %}
+                        <td class="align-canter text-center light-text"><button class="btn highlight-color delete_purchase_item" data-id="{{ purchase.pk }}"><i class="fa fa-times"></i> Delete</button></td>
+                    {% endif %}
+                {% endif %}
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<!--Customize the template to show the relevant information, here I will create the link to the other modals--></li>

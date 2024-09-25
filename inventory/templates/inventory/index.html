@@ -3,19 +3,756 @@
 
 {% block content %}
 <div>
-	<div class="row">
-		<div class="col-sm-11 col-md-5 mx-auto mt-5 px-3 text-center">
-			{% if user.is_authenticated %}
-				<h1 class="fw-light">LST Inventory Manager</h1>
-				<p class="fw-light">Keep track & manage inventory and receive quantity alerts for low inventory</p>
-			{% else %}
+	{% load custom_tags %}
+	{% if not user.is_authenticated %}
+		<div class="row">
+			<div class="col-sm-11 col-md-5 mx-auto mt-5 px-3 text-center">
 				<div>
-					<h1 class="fw-light">LST Inventory Manager</h1>
+					<h1 class="fw-light dark-text">LST Inventory Manager</h1>
 					<br/>
-					<a href="{% url 'login' %}" class="btn btn-primary">Log In To Get Started!</a>
+					<a href="{% url 'login' %}" class="btn highlight-color text-white">Log In To Get Started!</a>
+				</div>
+			</div>
+		</div>
+	{% endif %}
+	{% if user.is_authenticated %}
+		<div class="w-100 d-flex justify-content-evenly dashBody">
+			{% if user|has_group:"admin" or user|has_group:"technician" %}
+				<div class="left border-bottom pb-3">
+					<div class="d-flex flex-column statuses">
+						<h3 class="text-center">Group stock status</h3>
+						{% if critical_stock %}
+							<h5 class="mt-2 mb-3 w-100 text-center p-1 title">Critical</h5>
+							<div class="d-flex w-100 dashWrapper flex-wrap gap-3">
+								{% for element in critical_stock %}
+									<div class="card critical">
+										<div class="cardHeader">
+											<h5 class="text-center w-100">{{element.name}}</h5>
+										</div>
+										<div class="cardBody">
+											<div class="upper">
+												<div class="top">
+													<p>Minumim Stock Limit</p>
+													<strong>{{element.minimum_stock}}</strong>
+												</div>
+												<div class="bottom">
+													<p>Actual stock</p>
+													<strong>{{element.group_stock}}</strong>
+												</div>
+											</div>
+										</div>
+									</div>
+								{% endfor %}
+							</div>
+						{% endif %}
+						{% if low_stock %}
+							<h5 class="mt-2 mb-3 w-100 text-center p-1 title">Low</h5>
+							<div class="d-flex w-100 dashWrapper">
+								{% for element in low_stock %}
+									<div class="card low">
+										<div class="cardHeader">
+											<h5 class="text-center w-100">{{element.name}}</h5>
+										</div>
+										<div class="cardBody">
+											<div class="upper">
+												<div class="top">
+													<p>Minumim Stock Limit</p>
+													<strong>{{element.minimum_stock}}</strong>
+												</div>
+												<div class="bottom">
+													<p>Actual stock</p>
+													<strong>{{element.group_stock}}</strong>
+												</div>
+											</div>
+										</div>
+									</div>
+								{% endfor %}
+							</div>
+						{% endif %}
+					</div>
 				</div>
 			{% endif %}
+			<div class="right">
+				<div class="d-flex flex-column latest border-bottom pb-3">
+					<h3 class="text-center">Latest 5 items</h3>
+					<h5 class="mt-2 mb-0 w-full title text-center p-1 mb-3">Used</h5>
+					<div>
+						<div class="w-100 d-flex justify-content-evenly flex-wrap gap-3 mb-1">
+							{% for element in latest_used %}
+								<div class="card cardUses">
+									<div class="cardBody d-flex flex-column justify-content-evenly h-100 w-100">
+										<div class="w-100 text-center mb-3">
+											<strong>{{element.item}}</strong>
+										</div>
+										<div class="d-flex flex-column align-items-center justify-content-end mb-1">
+											<strong>Instalation Date</strong>
+											<p>{{element.date|date:"d/m/Y"}}</p>
+										</div>
+										<div class="w-100 h-100 d-flex justify-content-evenly align-items-end">
+											<div class="d-flex flex-column align-items-center">
+												<strong>User</strong>
+												<p>{{element.user}}</p>
+											</div>
+											<div class="d-flex flex-column align-items-center">
+												<strong>Telescope</strong>
+												<p>{{element.telescope.telescope.name}} - {{element.telescope.name}}</p>
+											</div>
+										</div>
+									</div>
+								</div>
+							{% endfor %}
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
-	</div>
+		<div class="d-flex flex-column deliveries mt-2">
+			<div class="d-flex align-items-center justify-content-center mb-3 mt-1">
+				<h3>Upcoming deliveries</h3>
+				<a class="btn btn-bg-dark rounded-xl bg-gradient btn-sm ms-2 pt-1 pb-1 h-100" pb-1 id='view_all_purchases' href="{% url 'purchases' %}?source=dash"><i class="fa fa-eye"></i> View All</a>
+			</div>
+			<div class="d-flex justify-content-evenly flex-wrap gap-4 mb-3">
+				{% for purchase in next_purchases %}
+					<div class="card cardPurchases">
+						<div class="cardHeader">
+							<h5 class="text-center w-100">{{purchase.order_number}}</h5>
+						</div>
+						<div class="cardBody">
+							<div class="d-flex flex-column align-items-center mb-1">
+								<strong class="text-center mb-0">Total items</strong>
+								<p>{{purchase.items_purchased}}</p>
+							</div>
+							<div class="d-flex flex-column align-items-center mb-1">
+								<strong class="text-center mb-0">Purchase date</strong>
+								<p>{{purchase.created_at|date:"d/m/Y"}}</p>
+							</div>
+							<div class="d-flex flex-column align-items-center mb-1">
+								<strong class="text-center mb-0">Expected delivery date</strong>
+								<p>{{purchase.expected_delivery_date|date:"d/m/Y"}}</p>
+							</div>
+						</div>
+						{% if user|has_group:"admin" or user|has_group:"technician" %}
+							<div class="cardFooter d-flex flex-column align-items-center">
+								<button type="button" class="btn btn-bg-dark btn-sm purchase-data mb-1" href="javascript:void(0)" data-id="{{ purchase.pk }}" data-status="{{purchase.status.name|lower}}" title="Info">
+									INFO
+								</button>
+								<button class="btn btn-bg-dark modalButton edit receivePurchase" data-id="{{purchase.id}}"><i class="fa fa-boxes-stacked"></i><p>Receive</p></button>
+							</div> 
+						{% endif %}
+					</div>
+				{% endfor %}
+			</div>
+		</div>
+	{% endif %}
 </div>
 {% endblock content %}
+
+{% block ScriptBlock %}
+<script>
+	let items = {{ items_data | safe }}
+	let purchases = {{ purchases_related | safe }}
+	let receiveButtons = document.querySelectorAll('.receivePurchase')
+	receiveButtons.forEach((receiveButton)=>{
+		receiveButton.addEventListener('click', ()=>{
+			let modalFooter = document.querySelector('#uni_modal .modal-footer')
+			let item_data = {}
+			let filteredItems = []
+			let index = 0
+			let sharedZoneId = null
+			let id = receiveButton.dataset.id
+			let purchasedItems = purchases.filter(element => element.purchase_group_id == id)
+			let itemIds = purchasedItems.map(item => item.item_id)
+			console.log(purchasedItems)
+			let itemsPurchased = items.filter(item => itemIds.includes(item.id))
+			let itemCicles = document.createElement('div')
+			itemCicles.classList.add('d-flex', 'justify-content-around', 'align-center', 'mb-2', 'circlesDiv')
+			itemsPurchased.forEach((element)=>{
+				filteredItems.push(element)
+				let circle = document.createElement('div')
+				circle.classList.add('circle')
+				circle.setAttribute('id', element.id)
+				itemCicles.appendChild(circle)
+			})
+			let firstId = filteredItems[index].id
+			let firstItem = filteredItems.filter(element => element.id == firstId)[0]
+			$('#uni_modal').modal('hide')
+			let div = document.createElement('div')
+			div.classList.add("cardHeader")
+			let title = document.createElement('h4')
+			title.classList.add('dark-text')
+			title.innerHTML = "Receive Items"
+			let anchor = document.createElement('div')
+			let editIcon = document.createElement('i')
+			editIcon.classList.add('fa', 'fa-boxes-stacked')
+			anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
+			anchor.addEventListener('click', (e)=>{
+				$('#uni_modal').modal('hide')
+			})
+			let icon = document.createElement('i')
+			icon.classList.add('fa', 'fa-arrow-left')
+			let titleDiv = document.createElement('div')
+			titleDiv.classList.add('titleDiv')
+			titleDiv.appendChild(editIcon)
+			titleDiv.appendChild(title)
+			anchor.appendChild(icon)
+			div.appendChild(titleDiv)
+			div.appendChild(anchor)
+			let editUrl = '{% url "store-purchase" 0 %}'
+			let finalEditUrl = editUrl.replace('0', firstId)
+			setTimeout(()=>{console.log('switching modal'); uni_modal(div, finalEditUrl, 'modal-md')}, 300)
+			modalFooter.innerHTML = ''
+			let continueDiv = document.createElement('div')
+			let saveButton = document.createElement('button')
+			saveButton.classList.add('btn', 'selected', 'edit')
+			let saveIcon = document.createElement('i')
+			saveIcon.classList.add('fa', 'fa-check')
+			saveButton.appendChild(saveIcon)
+			let savePar = document.createElement('p')
+			savePar.appendChild(document.createTextNode('Save'))
+			saveButton.appendChild(savePar)
+			let receiveSubmitButton = document.createElement('button')
+			receiveSubmitButton.classList.add('btn', 'selected', 'edit')
+			let receiveSubmitIcon = document.createElement('i')
+			receiveSubmitIcon.classList.add('fa', 'fa-boxes-stacked')
+			receiveSubmitButton.appendChild(receiveSubmitIcon)
+			let receiveSubmitPar = document.createElement('p')
+			receiveSubmitPar.appendChild(document.createTextNode('Store'))
+			receiveSubmitButton.appendChild(receiveSubmitPar)
+			let nextId = null
+			let nextItem = null
+			saveButton.addEventListener('click', (e)=>{
+				let itemKeys = Object.keys(item_data)
+				let codeInput = document.querySelector('#code')
+				let serialInput = document.querySelector('#serial_number')
+				let zoneCheck = document.querySelector('#assign-all')
+				let zoneSelect = document.querySelector('#zone')
+				let itemInput = document.querySelector('#item')
+				if (codeInput.value != '' && codeInput.value != null && codeInput.value.length > 4 || serialInput.value != '' && serialInput.value != null && serialInput.value.length > 4){
+					if(zoneCheck.checked){
+						if(zoneSelect.value != null){
+							sharedZoneId = zoneSelect.selectedIndex
+							Object.keys(item_data).forEach(key => {
+								item_data[key].zone = zoneSelect.value
+							})
+						}
+					}
+					if (index == 0 ){
+						item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+					}else{
+						item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+					}
+					if(filteredItems.length != itemKeys.length && index != filteredItems.length-1){
+						index += 1
+					}
+					if(filteredItems[index] != null){
+						nextId = filteredItems[index].id
+						nextItem = filteredItems.filter(element => element.id == nextId)[0]
+						if (item_data[nextId] == null){
+							console.log('The id is: '+nextId)
+							itemInput.value = nextItem.group__name+" - "+nextItem.id
+							if(sharedZoneId != null){
+								zoneSelect.selectedIndex = sharedZoneId
+							}else{
+								zoneSelect.selectedIndex = 0
+							}
+							codeInput.value = nextItem.code
+							serialInput.value = nextItem.serial_number
+						}
+					}
+					let circlesDiv = document.querySelector('.circlesDiv')
+					circlesDiv.childNodes.forEach((child, arrayIndex)=>{
+						if (child.classList.contains('circleSelected') && child.id != nextId){
+							child.classList.remove('circleSelected')
+						}else if(!child.classList.contains('circleSelected') && child.id == nextId){
+							child.classList.add('circleSelected')
+						}
+						if(item_data[child.id] != null){
+							child.classList.add('circleFilled')
+							child.addEventListener('click', (e)=>{
+								console.log(item_data[child.id])
+								if(item_data[child.id] != null){
+									if (index == 0 ){
+										if(item_data[firstId.toString()] == null){
+											item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+										}
+									}else{
+										if(item_data[nextId.toString()] == null){
+											item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+										}
+									}
+									circlesDiv.childNodes.forEach((child, arrayIndex)=>{
+										if(item_data[child.id] != null){
+											child.classList.add('circleFilled')
+											child.addEventListener('click', (e)=>{
+												if(item_data[child.id] != null){
+													if (index == 0 ){
+														if(item_data[firstId.toString()] == null){
+															item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+														}
+													}else{
+														if(item_data[nextId.toString()] == null){
+															item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+														}
+													}
+													index = arrayIndex
+													let currentItem = filteredItems.filter(element => element.id == parseInt(item_data[child.id].item))[0]
+													itemInput.value = currentItem.group__name+" - "+currentItem.id
+													console.log(item_data[child.id].zone)
+													zoneSelect.value = item_data[child.id].zone //This is the problem!
+													codeInput.value = item_data[child.id].code
+													serialInput.value = item_data[child.id].serial_number
+													circlesDiv.childNodes.forEach((element)=>{
+														element.classList.value = ''
+														element.classList.add('circle')
+														if(item_data[element.id] != null){
+															element.classList.add('circleFilled')
+														}
+													})
+													if(e.target.classList.contains('circleFilled')){
+														e.target.classList.remove('circleFilled')
+													}
+													e.target.classList.add('circleSelected')
+												}
+											})
+										}
+									})
+									index = arrayIndex
+									nextId = child.id
+									let currentItem = filteredItems.filter(element => element.id == parseInt(item_data[child.id].item))[0]
+									itemInput.value = currentItem.group__name+" - "+currentItem.id
+									zoneSelect.selectedIndex = parseInt(item_data[child.id].zone)
+									codeInput.value = item_data[child.id].code
+									serialInput.value = item_data[child.id].serial_number
+									circlesDiv.childNodes.forEach((element)=>{
+										element.classList.value = ''
+										element.classList.add('circle')
+										if(item_data[element.id] != null){
+											element.classList.add('circleFilled')
+										}
+									})
+									if(e.target.classList.contains('circleFilled')){
+										e.target.classList.remove('circleFilled')
+									}
+									e.target.classList.add('circleSelected')
+								}
+							})
+						}
+					})
+				}else{
+					let message = document.querySelector('#fieldsMessage')
+					message.classList.add('fieldsError')
+					setTimeout(()=>{message.classList.remove('fieldsError')}, 1000)
+				}
+				itemKeys = Object.keys(item_data)
+				console.log(filteredItems.length)
+				console.log(itemKeys.length)
+				if(filteredItems.length == itemKeys.length){
+					console.log('The lengths are the same')
+					let emptyFields = false
+					let emptyId = null
+					itemKeys.forEach(key => {
+						if(item_data[key].code == '' && item_data[key].serial_number == ''){
+							emptyFields = true
+							if(emptyId == null){
+								emptyId = item_data[key].item
+							}
+						}else{
+
+						}
+					})
+					if(!emptyFields){
+						modalFooter.childNodes[0].removeChild(saveButton)
+						receiveClone = receiveButton.cloneNode(true)
+						receiveClone.addEventListener('click', ()=>{
+							receive_purchase(id, item_data)
+						})
+						modalFooter.childNodes[0].appendChild(receiveClone)
+					}else{
+						let idButton = document.getElementById(emptyId)
+						idButton.click()
+						saveButton.click()
+					}
+				}
+			})
+			itemCicles.childNodes.forEach((child)=>{
+				if(child.id == firstId){
+					child.classList.add('circleSelected')
+				}
+			})
+			continueDiv.appendChild(itemCicles)
+			continueDiv.appendChild(saveButton)
+			modalFooter.appendChild(continueDiv)     
+			//receive_purchase()
+		})
+	})
+	$(document).on('click', '.purchase-data', function(e) {
+		let id = e.target.dataset.id
+		let status = e.target.dataset.status
+		let baseUrl = "{% url 'purchase-record' 0 %}"
+		let finalUrl = baseUrl.replace('0', id)
+		let headerDiv = document.createElement('div')
+		let modalFooter = document.querySelector('.modal-footer')
+		let receiveButton = null
+		headerDiv.classList.add("cardHeader")
+		let title = document.createElement('h4')
+		title.classList.add('dark-text')
+		title.innerHTML = "Purchase Information"
+		let anchor = document.createElement('div')
+		anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
+		anchor.addEventListener('click', (e)=>{
+			$('#uni_modal').modal('hide')
+		})
+		let icon = document.createElement('i')
+		icon.classList.add('fa', 'fa-times')
+		anchor.appendChild(icon)
+		headerDiv.appendChild(title)
+		headerDiv.appendChild(anchor)
+		uni_modal(headerDiv, finalUrl, 'modal-md')
+		{% if user|has_group:"admin" or user|has_group:"technician" %}
+			let editButton = document.createElement('button')
+			editButton.classList.add('btn', 'selected', 'edit')
+			let editIcon = document.createElement('i')
+			editIcon.classList.add('fa', 'fa-edit')
+			editButton.appendChild(editIcon)
+			let editPar = document.createElement('p')
+			editPar.appendChild(document.createTextNode('Edit')) //Finish editing permissions by groups 
+			editButton.appendChild(editPar)
+			editButton.addEventListener('click', ()=>{
+				$('#uni_modal').modal('hide')
+				let div = document.createElement('div')
+				div.classList.add("cardHeader")
+				let title = document.createElement('h4')
+				title.classList.add('dark-text')
+				title.innerHTML = "Edit Purchase"
+				let anchor = document.createElement('div')
+				let editIcon = document.createElement('i')
+				editIcon.classList.add('fa', 'fa-edit')
+				anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
+				anchor.addEventListener('click', (e)=>{
+					$('#uni_modal').modal('hide')
+					setTimeout(()=>{
+						uni_modal(headerDiv, finalUrl, 'modal-md')
+						modalFooter.innerHTML = ''
+						modalFooter.appendChild(editButton)
+						modalFooter.appendChild(receiveButton)
+					}, 300)
+				})
+				let icon = document.createElement('i')
+				icon.classList.add('fa', 'fa-arrow-left')
+				let titleDiv = document.createElement('div')
+				titleDiv.classList.add('titleDiv')
+				titleDiv.appendChild(editIcon)
+				titleDiv.appendChild(title)
+				anchor.appendChild(icon)
+				div.appendChild(titleDiv)
+				div.appendChild(anchor)
+				let editUrl = '{% url "manage-purchase" 0 %}'
+				let finalEditUrl = editUrl.replace('0', id)
+				setTimeout(()=>{console.log('switching modal'); uni_modal(div, finalEditUrl, 'modal-md')}, 300)
+				modalFooter.innerHTML = ''
+				let saveButton = document.createElement('button')
+				saveButton.classList.add('btn', 'selected', 'edit')
+				let saveIcon = document.createElement('i')
+				saveIcon.classList.add('fa', 'fa-check')
+				saveButton.appendChild(saveIcon)
+				let savePar = document.createElement('p')
+				savePar.appendChild(document.createTextNode('Save'))
+				saveButton.appendChild(savePar)
+				saveButton.addEventListener('click', (e)=>{
+					$('#uni_modal form').submit()
+				})
+				modalFooter.appendChild(saveButton)
+			})
+			if(modalFooter.classList.contains('hidden')){
+				modalFooter.classList.remove('hidden')
+			}
+			modalFooter.innerHTML = ''
+			modalFooter.appendChild(editButton)
+			if(status != 'received'){
+				receiveButton = document.createElement('button')
+				receiveButton.classList.add('btn', 'btn-bg-dark', 'modalButton', 'edit')
+				let receiveIcon = document.createElement('i')
+				receiveIcon.classList.add('fa', 'fa-boxes-stacked')
+				receiveButton.appendChild(receiveIcon)
+				let receivePar = document.createElement('p')
+				receivePar.appendChild(document.createTextNode('Receive'))
+				receiveButton.appendChild(receivePar)
+				receiveButton.addEventListener('click', ()=>{
+					let item_data = {}
+					let filteredItems = []
+					let index = 0
+					let sharedZoneId = null
+					purchaseItemTable = document.querySelectorAll('#purchase-items>tbody>tr')
+					let itemCicles = document.createElement('div')
+					itemCicles.classList.add('d-flex', 'justify-content-around', 'align-center', 'mb-2', 'circlesDiv')
+					purchaseItemTable.forEach((element)=>{
+						filteredItems.push(items.filter(data => data.id == element.children[1].id)[0])
+						let circle = document.createElement('div')
+						circle.classList.add('circle')
+						circle.setAttribute('id', element.children[1].id)
+						itemCicles.appendChild(circle)
+					})
+					let firstId = filteredItems[index].id
+					let firstItem = filteredItems.filter(element => element.id == firstId)[0]
+					$('#uni_modal').modal('hide')
+					let div = document.createElement('div')
+					div.classList.add("cardHeader")
+					let title = document.createElement('h4')
+					title.classList.add('dark-text')
+					title.innerHTML = "Receive Items"
+					let anchor = document.createElement('div')
+					let editIcon = document.createElement('i')
+					editIcon.classList.add('fa', 'fa-boxes-stacked')
+					anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
+					anchor.addEventListener('click', (e)=>{
+						$('#uni_modal').modal('hide')
+						setTimeout(()=>{
+							uni_modal(headerDiv, finalUrl, 'modal-md')
+							modalFooter.innerHTML = ''
+							modalFooter.appendChild(editButton)
+							modalFooter.appendChild(receiveButton)
+						}, 300)
+					})
+					let icon = document.createElement('i')
+					icon.classList.add('fa', 'fa-arrow-left')
+					let titleDiv = document.createElement('div')
+					titleDiv.classList.add('titleDiv')
+					titleDiv.appendChild(editIcon)
+					titleDiv.appendChild(title)
+					anchor.appendChild(icon)
+					div.appendChild(titleDiv)
+					div.appendChild(anchor)
+					let editUrl = '{% url "store-purchase" 0 %}'
+					let finalEditUrl = editUrl.replace('0', firstId)
+					setTimeout(()=>{console.log('switching modal'); uni_modal(div, finalEditUrl, 'modal-md')}, 300)
+					modalFooter.innerHTML = ''
+					let continueDiv = document.createElement('div')
+					let saveButton = document.createElement('button')
+					saveButton.classList.add('btn', 'selected', 'edit')
+					let saveIcon = document.createElement('i')
+					saveIcon.classList.add('fa', 'fa-check')
+					saveButton.appendChild(saveIcon)
+					let savePar = document.createElement('p')
+					savePar.appendChild(document.createTextNode('Save'))
+					saveButton.appendChild(savePar)
+					let receiveSubmitButton = document.createElement('button')
+					receiveSubmitButton.classList.add('btn', 'selected', 'edit')
+					let receiveSubmitIcon = document.createElement('i')
+					receiveSubmitIcon.classList.add('fa', 'fa-boxes-stacked')
+					receiveSubmitButton.appendChild(receiveSubmitIcon)
+					let receiveSubmitPar = document.createElement('p')
+					receiveSubmitPar.appendChild(document.createTextNode('Store'))
+					receiveSubmitButton.appendChild(receiveSubmitPar)
+					let nextId = null
+					let nextItem = null
+					saveButton.addEventListener('click', (e)=>{
+						let itemKeys = Object.keys(item_data)
+						let codeInput = document.querySelector('#code')
+						let serialInput = document.querySelector('#serial_number')
+						let zoneCheck = document.querySelector('#assign-all')
+						let zoneSelect = document.querySelector('#zone')
+						let itemInput = document.querySelector('#item')
+						console.log('This is the zone selected id: '+zoneSelect.value)
+						if (codeInput.value != '' && codeInput.value != null && codeInput.value.length > 4 || serialInput.value != '' && serialInput.value != null && serialInput.value.length > 4){
+							if(zoneCheck.checked){
+								if(zoneSelect.value != null){
+									sharedZoneId = zoneSelect.selectedIndex
+									Object.keys(item_data).forEach(key => {
+										item_data[key].zone = zoneSelect.value
+									})
+								}
+							}
+							if (index == 0 ){
+								item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+							}else{
+								item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+							}
+							if(filteredItems.length != itemKeys.length && index != filteredItems.length-1){
+								index += 1
+							}
+							if(filteredItems[index] != null){
+								nextId = filteredItems[index].id
+								nextItem = filteredItems.filter(element => element.id == nextId)[0]
+								if (item_data[nextId] == null){
+									console.log('The id is: '+nextId)
+									itemInput.value = nextItem.group__name+" - "+nextItem.id
+									if(sharedZoneId != null){
+										zoneSelect.selectedIndex = sharedZoneId
+									}else{
+										zoneSelect.selectedIndex = 0
+									}
+									codeInput.value = nextItem.code
+									serialInput.value = nextItem.serial_number
+								}
+							}
+							let circlesDiv = document.querySelector('.circlesDiv')
+							circlesDiv.childNodes.forEach((child, arrayIndex)=>{
+								if (child.classList.contains('circleSelected') && child.id != nextId){
+									child.classList.remove('circleSelected')
+								}else if(!child.classList.contains('circleSelected') && child.id == nextId){
+									child.classList.add('circleSelected')
+								}
+								if(item_data[child.id] != null){
+									child.classList.add('circleFilled')
+									child.addEventListener('click', (e)=>{
+										if(item_data[child.id] != null){
+											console.log(item_data)
+											if (index == 0 ){
+												if(item_data[firstId.toString()] == null){
+													item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+												}
+											}else{
+												if(item_data[nextId.toString()] == null){
+													item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+												}
+											}
+											circlesDiv.childNodes.forEach((child, arrayIndex)=>{
+												if(item_data[child.id] != null){
+													child.classList.add('circleFilled')
+													child.addEventListener('click', (e)=>{
+														if(item_data[child.id] != null){
+															if (index == 0 ){
+																if(item_data[firstId.toString()] == null){
+																	item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+																}
+															}else{
+																if(item_data[nextId.toString()] == null){
+																	item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+																}
+															}
+															index = arrayIndex
+															let currentItem = filteredItems.filter(element => element.id == parseInt(item_data[child.id].item))[0]
+															itemInput.value = currentItem.group__name+" - "+currentItem.id
+															zoneSelect.selectedIndex = parseInt(item_data[child.id].zone)
+															codeInput.value = item_data[child.id].code
+															serialInput.value = item_data[child.id].serial_number
+															circlesDiv.childNodes.forEach((element)=>{
+																element.classList.value = ''
+																element.classList.add('circle')
+																if(item_data[element.id] != null){
+																	element.classList.add('circleFilled')
+																}
+															})
+															if(e.target.classList.contains('circleFilled')){
+																e.target.classList.remove('circleFilled')
+															}
+															e.target.classList.add('circleSelected')
+														}
+													})
+												}
+											})
+											index = arrayIndex
+											nextId = child.id
+											let currentItem = filteredItems.filter(element => element.id == parseInt(item_data[child.id].item))[0]
+											itemInput.value = currentItem.group__name+" - "+currentItem.id
+											zoneSelect.selectedIndex = parseInt(item_data[child.id].zone)
+											codeInput.value = item_data[child.id].code
+											serialInput.value = item_data[child.id].serial_number
+											circlesDiv.childNodes.forEach((element)=>{
+												element.classList.value = ''
+												element.classList.add('circle')
+												if(item_data[element.id] != null){
+													element.classList.add('circleFilled')
+												}
+											})
+											if(e.target.classList.contains('circleFilled')){
+												e.target.classList.remove('circleFilled')
+											}
+											e.target.classList.add('circleSelected')
+										}
+									})
+								}
+							})
+						}else{
+							let message = document.querySelector('#fieldsMessage')
+							message.classList.add('fieldsError')
+							setTimeout(()=>{message.classList.remove('fieldsError')}, 1000)
+						}
+						itemKeys = Object.keys(item_data)
+						console.log(filteredItems.length)
+						console.log(itemKeys.length)
+						if(filteredItems.length == itemKeys.length){
+							console.log('The lengths are the same')
+							let emptyFields = false
+							let emptyId = null
+							itemKeys.forEach(key => {
+								if(item_data[key].code == '' && item_data[key].serial_number == ''){
+									emptyFields = true
+									if(emptyId == null){
+										emptyId = item_data[key].item
+									}
+								}else{
+	
+								}
+							})
+							if(!emptyFields){
+								modalFooter.childNodes[0].removeChild(saveButton)
+								receiveClone = receiveButton.cloneNode(true)
+								receiveClone.addEventListener('click', ()=>{
+									receive_purchase(id, item_data)
+								})
+								modalFooter.childNodes[0].appendChild(receiveClone)
+							}else{
+								let idButton = document.getElementById(emptyId)
+								idButton.click()
+								saveButton.click()
+							}
+						}
+					})
+					itemCicles.childNodes.forEach((child)=>{
+						if(child.id == firstId){
+							child.classList.add('circleSelected')
+						}
+					})
+					continueDiv.appendChild(itemCicles)
+					continueDiv.appendChild(saveButton)
+					modalFooter.appendChild(continueDiv)     
+					//receive_purchase()
+				})
+				modalFooter.appendChild(receiveButton)
+			}
+		{% else %}
+			if(!modalFooter.classList.contains('hidden')){
+				modalFooter.classList.add('hidden')
+			}
+		{% endif %}
+	})
+
+	function receive_purchase(id, item_data) {
+        console.log(item_data)
+        start_loader()
+        var _this = $(this)
+        $('.err-msg').remove()
+        var el = $('<div>')
+        el.addClass("alert alert-danger err-msg")
+        el.hide()
+        $.ajax({
+            url: '{% url "receive-purchase" %}',
+            headers: {'X-CSRFToken': "{{csrf_token}}"},
+            method: 'POST',
+            data: JSON.stringify({id: id, item_data: item_data}),
+            contentType: 'application/json',
+            dataType: 'json',
+            error: err => {
+                console.log(err)
+                el.text('An error occurred.')
+                el.show('slow')
+                end_loader()
+            },
+            success: function(resp) {
+                if (resp.status == 'success') {
+                    location.reload()
+                } else if (!!resp.msg) {
+                    el.text('An error occurred.')
+                    el.show('slow')
+                } else {
+                    el.text('An error occurred.')
+                    el.show('slow')
+                }
+                end_loader()
+            }
+        })
+    }
+
+</script>
+{% endblock ScriptBlock %}

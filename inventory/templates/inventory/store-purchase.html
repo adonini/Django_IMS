@@ -1,0 +1,109 @@
+<div class="container-fluid">
+    <p class="guide-message"></p>
+    <form action=" " id="purchase-form">
+        {% csrf_token %}
+        <input type="hidden" name="id" value="{{ purchase.pk }}">
+            <div class="form-group mb-3 ">
+                <label for="item" class="control-label">Items</label>
+                {% if purchase.item is None %}
+                    <select class="form-control rounded-0" name="item" id="item">
+                        {% if items|length > 1 %}
+                            <option value="All" {% if not purchase.zone %} selected {% endif %} disabled>-----</option>
+                        {% endif %}
+                                {% for item in items %}
+                                    <option value="{{ item.id }}" {% if item.id == purchase.item.id %} selected {% endif %}>{{item.group.name}} - {% if item.code is not None and item.code != '' %}{{item.code}}{% elif item.serial_number is not None and item.serial_number != '' %}{{item.serial_number}}{% else %}{{item.pk}}{% endif %}</option>
+                                {% endfor %}
+                    </select>
+                {% else %}
+                    <input type="text" id="item" value="{{purchase.item.group.name}} - {{purchase.item.id}}" disabled>
+                {% endif %}
+            </div>
+        
+        <div class="form-group mb-3 {% if operation == 2 %} hidden {% endif %}">
+            <label for="zone" class="control-label">Zones</label>
+            <select class="form-control rounded-0" name="zone" id="zone">
+                {% if operation == 1 %}
+                    <option value="All" {% if not purchase.zone %} selected {% endif %} disabled>-----</option>
+                {% endif %}
+                {% for zone in zones %}
+                    <option value="{{ zone.id }}" {% if zone.id == purchase.zone.id %} selected {% endif %}> {{zone.location.name}} - {{ zone.name }}</option>
+                {% endfor %}
+            </select>
+            <div class="d-flex align-center">
+                <input type="checkbox" id="assign-all" class="me-2"><p class="mb-0"><label for="assign-all">Assign this zone to <strong>all</strong> items</p></label>
+            </div>
+        </div>
+        <div class="optionalInputs">
+            <div class="alert alert-danger p-4 justify-content-center" role="alert" id="alert" hidden>
+                <p class="dark-text text-center mb-0">Please fill one or both of the fields below.</p>
+            </div>
+            <div class="form-group mb-3 ">
+                <label for="code" class="control-label">Code</label>
+                <input type="text" class="form-control rounded-0" pattern="^[A-Za-z]+-[A-Za-z0-9]+$" title="Please follow this format (... = Might be more characters, X = Letters): XX...-XX45..." id="code" name="code" value="{{ purchase.item.code }}" required>
+            </div>
+            <div class="form-group mb-3 ">
+                <label for="serial_number" class="control-label">Serial Number</label>
+                <input type="text" class="form-control rounded-0" id="serial_number" pattern=".{4,}" title="Minimum 4 characters" name="serial_number" value="{{ puerchase.item.serial_number }}" required>
+            </div>
+        </div>
+    </form>
+</div>
+{% comment %} {% load crispy_forms_tags %}
+<div class="container-fluid">
+    <form method="post" id="purchase-form">
+        {% csrf_token %}
+        {{ form|crispy }}
+    </form>
+</div> {% endcomment %}
+<script>
+    if (typeof stock_info === 'undefined'){
+        $(function() {
+            $('#purchase-form').submit(function(e) {
+                e.preventDefault();
+                let codeInput = document.querySelector('#code')
+                let serialInput = document.querySelector('#serial_number')
+                var _this = $(this)
+                $('.err-msg').remove();
+                var el = $('<div>')
+                el.addClass("alert alert-danger err-msg")
+                el.hide()
+                if (_this[0].checkValidity() == false) {
+                    _this[0].reportValidity();
+                    return false;
+                }
+                start_loader();
+                $.ajax({
+                    url: "{% url 'add-purchase' %}",
+                    data: new FormData($(this)[0]),
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    method: 'POST',
+                    type: 'POST',
+                    dataType: 'json',
+                    error: err => {
+                        console.log(err)
+                        alert("An error occured ", 'error');
+                        end_loader();
+                    },
+                    success: function(resp) {
+                        if (typeof resp == 'object' && resp.status == 'success') {
+                            el.removeClass("alert alert-danger err-msg ")
+                            location.reload()
+                        } else if (resp.status == 'failed' && !!resp.msg) {
+                            el.html(resp.msg)
+                        } else {
+                            el.text("An error occured ", 'error');
+                            end_loader();
+                            console.err(resp)
+                        }
+                        _this.prepend(el)
+                        el.show('slow')
+                        $("html, body, .modal ").scrollTop(0);
+                        end_loader()
+                    }
+                })
+            })
+        })
+    }
+</script>

@@ -1,6 +1,6 @@
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
-from ..models import Stock_Type, Item_status, Purchase_status, Location, Zone, Telescope, Unit, Payment_sources, Category, Sub_category, Group
+from ..models import Stock_Type, Item_status, Purchase_status, Location, Zone, Telescope, Unit, Payment_sources, Category, Sub_category, Group, Telescope_structure
 from django.contrib.auth.models import Group as G, Permission
 
 def run():
@@ -10,11 +10,11 @@ def run():
         {'name': 'Stored'},
         {'name': 'Broken'},
         {'name': 'Installed'},
+        {'name': 'In use'},
     ]
     PurchaseStatuses_entries = [
         {'name': 'Purchased'},
         {'name': 'Received'},
-        {'name': 'Returned'},
     ]
     StockTypes_entries = [
         {'name': 'Stock In'},
@@ -104,6 +104,15 @@ def run():
         {"name": "LST2"},
         {"name": "LST3"},
         {"name": "LST4"},
+    ]
+
+    Telescope_Structures = [
+        {"name": "Drive"},
+        {"name": "IT"},
+        {"name": "Energy"},
+        {"name": "CAT"},
+        {"name": "Structure"},
+        {"name": "CC"},
     ]
 
     Payment_entries = [
@@ -232,7 +241,19 @@ def run():
 
     if not Telescope.objects.exists():
         for entry in Telescope_entries:
-            Telescope.objects.get_or_create(**entry)
+            telescope = Telescope.objects.get_or_create(**entry)
+            for data in Telescope_Structures:
+                if len(Telescope.objects.all()) == 1 and data['name'] == "CC":
+                    Telescope_structure.objects.get_or_create(
+                        name=data['name'], 
+                        telescope=telescope
+                    )
+                else:
+                    Telescope_structure.objects.get_or_create(
+                        name=data['name'], 
+                        telescope=telescope
+                    )
+
     else:
         print("There was data on telescope.")
 

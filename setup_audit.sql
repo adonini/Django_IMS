@@ -3,10 +3,10 @@ CREATE TABLE IF NOT EXISTS history_modifications (
     id SERIAL PRIMARY KEY,
     table_name TEXT NOT NULL,
     column_name TEXT NOT NULL,
+    row_id TEXT NOT NULL,
     old_value TEXT,
     new_value TEXT,
     changed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    operation_type TEXT NOT NULL,
     changed_by TEXT NOT NULL
 );
 
@@ -16,24 +16,38 @@ CREATE TABLE IF NOT EXISTS audit_log (
     table_name TEXT NOT NULL,
     operation_type TEXT NOT NULL,
     affected_row_id TEXT NOT NULL,
+    related_id TEXT,
     performed_by TEXT NOT NULL,
     performed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+--Creates the deleted _item table
+CREATE TABLE IF NOT EXISTS deleted_items (
+    id SERIAL PRIMARY KEY,
+    item_id INTEGER,  
+    status_id INTEGER,
+    group_id INTEGER,
+    code TEXT,
+    serial_number TEXT,
+    deleted_by TEXT NOT NULL, 
+    deleted_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP  
+);
+
 -- Creates the user_context table
 CREATE TABLE user_context (
     session_id TEXT PRIMARY KEY,
     current_user_name TEXT
 );
 
-
 -- Creates the triggers functions
 -- UPDATE
 CREATE OR REPLACE FUNCTION log_update() RETURNS TRIGGER AS $$
 DECLARE
     username TEXT;
-    column_name TEXT;
+    col_name TEXT;
     old_value TEXT;
     new_value TEXT;
+    row_id TEXT;
 BEGIN
 
     SELECT current_user_name INTO username
@@ -44,12 +58,14 @@ BEGIN
         username := 'unknown';
     END IF;
 
-    FOR column_name IN 
+    row_id := OLD.id::TEXT;
+
+    FOR col_name IN 
         SELECT column_name 
         FROM information_schema.columns 
-        WHERE table_name = TG_TABLE_NAME AND column_name != 'id'
+        WHERE table_name = TG_TABLE_NAME AND column_name != 'id' AND column_name != 'updated_at'
     LOOP
-        EXECUTE format('SELECT ($1).%I::TEXT, ($2).%I::TEXT', column_name, column_name)
+        EXECUTE format('SELECT ($1).%I::TEXT, ($2).%I::TEXT', col_name, col_name)
         INTO old_value, new_value
         USING OLD, NEW;
 
@@ -57,18 +73,18 @@ BEGIN
             INSERT INTO history_modifications(
                 table_name,
                 column_name,
+                row_id,
                 old_value,
                 new_value,
-                operation_type,
                 changed_by,
                 changed_at
             )
             VALUES (
                 TG_TABLE_NAME,
-                column_name,
+                col_name,
+                row_id,
                 old_value,
                 new_value,
-                'UPDATE',
                 username,
                 CURRENT_TIMESTAMP
             );
@@ -83,6 +99,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION log_insert() RETURNS TRIGGER AS $$
 DECLARE
     username TEXT;
+    related_id_value TEXT;
 BEGIN
 
     SELECT current_user_name INTO username
@@ -93,10 +110,19 @@ BEGIN
         username := 'unknown';
     END IF;
 
+    IF TG_TABLE_NAME = 'stocks' THEN
+        related_id_value := NEW.item_id::TEXT;
+    ELSIF TG_TABLE_NAME = 'items' THEN
+        related_id_value := NEW.group_id::TEXT;
+    ELSE
+        related_id_value := NULL;
+    END IF;
+
     INSERT INTO audit_log(
         table_name,
         operation_type,
         affected_row_id,
+        related_id,
         performed_by,
         performed_at
     )
@@ -104,6 +130,7 @@ BEGIN
         TG_TABLE_NAME,
         'INSERT',
         NEW.id::TEXT,
+        related_id_value,
         username,
         CURRENT_TIMESTAMP
     );
@@ -116,6 +143,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION log_delete() RETURNS TRIGGER AS $$
 DECLARE
     username TEXT;
+    related_id_value TEXT;
 BEGIN
     SELECT current_user_name INTO username
     FROM user_context
@@ -125,10 +153,19 @@ BEGIN
         username := 'unknown';
     END IF;
 
+    IF TG_TABLE_NAME = 'stocks' THEN
+        related_id_value := OLD.item_id::TEXT;
+    ELSIF TG_TABLE_NAME = 'items' THEN
+        related_id_value := OLD.group_id::TEXT;
+    ELSE
+        related_id_value := NULL;
+    END IF;
+
     INSERT INTO audit_log(
         table_name,
         operation_type,
         affected_row_id,
+        related_id,
         performed_by,
         performed_at
     )
@@ -136,7 +173,43 @@ BEGIN
         TG_TABLE_NAME,
         'DELETE',
         OLD.id::TEXT,
+        related_id_value,
         username,
+        CURRENT_TIMESTAMP
+    );
+
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION log_deleted_item() RETURNS TRIGGER AS $$
+DECLARE
+    username TEXT;
+BEGIN
+    SELECT current_user_name INTO username
+    FROM user_context
+    WHERE session_id = (SELECT current_setting('myapp.session_id'));
+
+    IF username IS NULL THEN
+        username := 'unknown';
+    END IF;
+
+    INSERT INTO deleted_items (
+        item_id, 
+        status_id, 
+        group_id, 
+        code, 
+        serial_number, 
+        deleted_by, 
+        deleted_at
+    )
+    VALUES (
+        OLD.id, 
+        OLD.status_id, 
+        OLD.group_id, 
+        OLD.code, 
+        OLD.serial_number, 
+        username, 
         CURRENT_TIMESTAMP
     );
 
@@ -146,10 +219,10 @@ $$ LANGUAGE plpgsql;
 
 -- Creates the triggers on the items table
 -- ITEMS
-CREATE TRIGGER trigger_log_changes_items
+CREATE TRIGGER trigger_log_update_items
 AFTER UPDATE ON items
 FOR EACH ROW
-EXECUTE FUNCTION log_changes();
+EXECUTE FUNCTION log_update();
 
 CREATE TRIGGER trigger_log_insert_items
 AFTER INSERT ON items
@@ -160,31 +233,36 @@ CREATE TRIGGER trigger_log_delete_items
 AFTER DELETE ON items
 FOR EACH ROW
 EXECUTE FUNCTION log_delete();
--- STOCK
-CREATE TRIGGER trigger_log_changes_stock
-AFTER UPDATE ON stock
+
+CREATE TRIGGER trigger_log_deleted_item
+AFTER DELETE ON items
 FOR EACH ROW
-EXECUTE FUNCTION log_changes();
+EXECUTE FUNCTION log_deleted_item();
+-- STOCK
+CREATE TRIGGER trigger_log_update_stock
+AFTER UPDATE ON stocks
+FOR EACH ROW
+EXECUTE FUNCTION log_update();
 
 CREATE TRIGGER trigger_log_insert_stock
-AFTER INSERT ON stock
+AFTER INSERT ON stocks
 FOR EACH ROW
 EXECUTE FUNCTION log_insert();
 
 CREATE TRIGGER trigger_log_delete_stock
-AFTER DELETE ON stock
+AFTER DELETE ON stocks
 FOR EACH ROW
 EXECUTE FUNCTION log_delete();
 -- GROUPS
-CREATE TRIGGER trigger_log_changes_groups
+CREATE TRIGGER trigger_log_update_groups
 AFTER UPDATE ON groups
 FOR EACH ROW
-EXECUTE FUNCTION log_changes();
+EXECUTE FUNCTION log_update();
 -- PURCHASES
-CREATE TRIGGER trigger_log_changes_purchases
+CREATE TRIGGER trigger_log_update_purchases
 AFTER UPDATE ON purchases
 FOR EACH ROW
-EXECUTE FUNCTION log_changes();
+EXECUTE FUNCTION log_update();
 
 CREATE TRIGGER trigger_log_insert_purchases
 AFTER INSERT ON purchases
@@ -196,10 +274,10 @@ AFTER DELETE ON purchases
 FOR EACH ROW
 EXECUTE FUNCTION log_delete();
 -- PURCHASE-GROUPS
-CREATE TRIGGER trigger_log_changes_purchase_groups
+CREATE TRIGGER trigger_log_update_purchase_groups
 AFTER UPDATE ON purchase_groups
 FOR EACH ROW
-EXECUTE FUNCTION log_changes();
+EXECUTE FUNCTION log_update();
 
 CREATE TRIGGER trigger_log_insert_purchase_groups
 AFTER INSERT ON purchase_groups
@@ -210,3 +288,19 @@ CREATE TRIGGER trigger_log_delete_purchase_groups
 AFTER DELETE ON purchase_groups
 FOR EACH ROW
 EXECUTE FUNCTION log_delete();
+
+-- INDEXES
+DROP INDEX IF EXISTS unique_item_stock;
+CREATE UNIQUE INDEX unique_item_stock ON stocks (item_id, stock_type_id);
+
+DROP INDEX IF EXISTS unique_item_code;
+CREATE UNIQUE INDEX unique_item_code ON items (code)
+WHERE code IS NOT NULL AND code != '';
+
+DROP INDEX IF EXISTS unique_item_serial_number;
+CREATE UNIQUE INDEX unique_item_serial_number ON items (serial_number)
+WHERE serial_number IS NOT NULL AND serial_number != '';
+
+DROP INDEX IF EXISTS unique_purchase_group_order;
+CREATE UNIQUE INDEX unique_purchase_group_order ON purchase_groups (order_number)
+WHERE order_number IS NOT NULL AND order_number != '';

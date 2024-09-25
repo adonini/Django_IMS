@@ -1,0 +1,16 @@
+
+{% load humanize %}
+<div class="producerContent">
+    <ul class="list-group list-group-flush ul-left">
+        <li class="list-group-item"><strong>Name</strong> <br> {{producer.name}}</li>
+        <li class="list-group-item liDesc"><strong>Description</strong> <br> <p class="desc">{{ producer.description }}</p></li>
+        <li class="list-group-item"><strong>Address</strong> <br> {{ producer.address }}</li>
+    </ul>
+    <ul class="list-group list-group-flush ul-right">
+        <li class="list-group-item"><strong>Contact Person</strong> <br> {{producer.contact_person}}</li>
+        <li class="list-group-item"><strong>Phone</strong> <br> {{producer.phone}}</li>
+        <li class="list-group-item"><strong>Email</strong> <br> {{ producer.email }}</li>
+        <li class="list-group-item"><strong>Website</strong> <br> {% if producer.website is not None and producer.website != '' %}<a href="{{producer.website}}" target="_blank" class="btn-bg-dark link">Visit</a>{% else %}{{producer.website}}{% endif %}</li>
+    </ul>
+</div>
+<!--Customize the template to show the relevant information, here I will create the link to the other modals-->

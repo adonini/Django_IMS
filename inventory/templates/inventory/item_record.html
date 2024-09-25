@@ -1,27 +1,48 @@
-{% extends "inventory/base.html" %}
 
-
-{% block content %}
-
-<div class="card border-dark">
-    <div class="card-header bg-primary"><strong>
-        {{ item.code }}
-        {{ item.name }}</strong>
-    </div>
-    <ul class="list-group list-group-flush">
-        <li class="list-group-item"><strong>Description</strong> <br> {{ item.description }}</li>
-        <li class="list-group-item"><strong>Category</strong> <br> {{ item.category }}</li>
-        <li class="list-group-item"><strong>Producer</strong> <br> {{ item.producer }}</li>
-        <li class="list-group-item"><strong>Model</strong> <br> {{ item.model }}</li>
-        <li class="list-group-item"><strong>In Stock</strong> <br> {{ item.count_inventory }}</li>
-        <li class="list-group-item"><strong>Serials</strong> <br> {{ item.split_serials }}</li>
-        <li class="list-group-item"><strong>Create At</strong> <br> {{ item.date_created}}</li>
-        <li class="list-group-item"><strong>Created By</strong> <br> {{ item.user}}</li>
-        <li class="list-group-item"><strong>Last Modify</strong> <br> {{ item.date_updated}}</li>
+{% load humanize %}
+{% load custom_tags %}
+<div class="itemContent">
+    <ul class="list-group list-group-flush ul-left">
+        <li class="list-group-item"><strong>Code</strong> <br> {% if item.code is not None and item.code != '' %}{{item.code}}{% else %}None{% endif %}</li>
+        <li class="list-group-item"><strong>Category</strong> <br> {{ item.group.sub_category.category.name }}</li>
+        <li class="list-group-item"><strong>Sub-Category</strong> <br> {{ item.group.sub_category.name }}</li>
+        <li class="list-group-item"><strong>Group</strong> <br> {{ item.group.name }}</li>
+        <li class="list-group-item"><strong>Total Group Storage</strong> <br> {{ item.group.group_stock }}</li>
     </ul>
-    <div class="card-footer">
-        <a href="{% url 'item_list' %}" class="btn btn-primary">Back</a>
-    </div>
+    <ul class="list-group list-group-flush ul-right">
+        <li class="list-group-item"><strong>Serial Number</strong> <br> {% if item.serial_number is not None and item.serial_number != '' %}{{item.serial_number}}{% else %}None{% endif %}</li>
+        <li class="list-group-item"><strong>Model</strong> <br> {{ item.model}}</li>
+        <li class="list-group-item"><strong>Price</strong> <br> {% if item.price is not None %}{{ item.price | intcomma }} €{% else %}{{ item.price }}{% endif %}</li>
+        <li class="list-group-item"><strong>Status</strong> <br> <div {% if item.status is not None %} class="{{item.status.name|lower}}" {% endif %}>{% if item.status is not None %}{{ item.status.name }}{% else %}{{item.status}}{% endif %}</div></li>
+        <li class="list-group-item"><strong>Telescope</strong> <br> {% if item.telescope is not None %}{{ item.telescope.name }}{% else %}{{item.telescope}}{% endif %}</li>
+    </ul>
 </div>
-
-{% endblock content %}
+<h4>Related to this item</h4>
+<div class="cards">
+    <div class="card">
+        <div class="cardContent">
+            <strong>Producer</strong>
+            {% if item.producer is not None %}{{ item.producer.name }}{% else %}{{item.producer}}{% endif %}
+        </div>
+        <button class="adminButton link producerBtn">View</button>
+    </div>
+    {% if item.status.name == 'Installed' %}
+        <div class="card">
+            <div class="cardContent">
+                <strong class="text-center {% if user|has_group:"user" %} mb-3 {% endif %}">Instalation Date</strong>
+                {{instalation_date| date:"d/m/Y"}}
+            </div>
+            {% if user|has_group:"admin" or user|has_group:"technician" %}
+                <button class="adminButton link uninstallBtn">Uninstall</button>
+            {% endif %}
+        </div>
+    {% endif %}
+    {% if item.datasheet_url is not None and item.datasheet_url != '' %}
+        <div class="card">
+            <div class="cardContent">
+                <strong>Datasheet</strong>
+            </div>
+            <a href="{{item.datasheet_url}}" target="_blank" class="adminButton link">View</a>
+        </div>
+    {% endif %}
+</div>
