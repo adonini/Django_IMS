@@ -1,5 +1,9 @@
 from django.contrib import admin
-from .models import Stock, Item, Producer, Category, Sub_category, Telescope, Supplier, Unit, Group, Item_status, Stock_Type, Location, Zone, Payment_sources, Purchase_status, Purchase_group, Purchase 
+from .models import Item, Category, Producer, Stock, Stock_Type, Sub_category, Supplier, Telescope, Unit, Group, Item_status, Location, Zone, Payment_sources, Purchase, Purchase_group, Purchase_status
+
+admin.site.site_title = "LST IMS AP"
+admin.site.site_header = "LST IMS Admin Panel"
+admin.site.index_title = "Content manager"
 
 admin.site.register(Producer)
 admin.site.register(Stock)

@@ -1,81 +1,559 @@
 {% extends 'inventory/base.html' %}
 
 {% block content %}
-<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-    <div class="card card-default rounded-0 shadow ">
-        <div class="card-header">
-            <div class="d-flex w-100 align-items-center justify-content-between">
-                <h4 class="card-title fw-bold">Stock</h4>
-            </div>
+{% load humanize %}
+{% load custom_tags %}
+<div class="container-fluid">
+    <div class="header">
+        <div class="d-flex align-items-center w-100">
+            <h3 class="card-title dark-text fw-normal me-3">{{page_title}}</h4>
+            {% if user|has_group:"admin" or user|has_group:"technician" %}
+                <div class="tools">
+                    <button type="button" class="btn btn-bg-dark rounded-xl btn-sm" id='add_new'><i class="fa fa-plus"></i> Add Stock</button>
+                    <button type="button" class="btn selected rounded-xl btn-sm" id='use'><i class="fa fa-box-open"></i> Use Item</button>
+                </div>
+            {% endif %}
         </div>
-        <div class="card-body">
-            <div class="container-fluid">
-                <table class="table table-bordered" id="item-list">
-                    <thead>
-                        <tr class="bg-gradient bg-primary bg-opacity-50 text-light">
-                            <th class="px-2 py-2 text-center">#</th>
-                            <th class="px-2 py-2 text-center">Product</th>
-							<th class="px-2 py-2 text-center">Location</th>
-                            <th class="px-2 py-2 text-center">Available Stock</th>
-							<th class="px-2 py-2 text-center">Reorder Point</th>
-                            <th class="px-2 py-2 text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-						{% for item in items %}
-						<tr>
-							<th class="align-middle text-center" scope="row">{{ forloop.counter }}</th>
-							<td class="align-middle text-center">{{ item }}</a></td>
-							<td class="align-middle text-center">{{ stock.area }} {{ stock.shelf }}</td>
-							<td class="align-middle text-center">{{ item.count_inventory }}</td>
-							{% comment %} {% if item.id in low_inventory_ids %}
-								<td class="text-danger">{{ item.quantity }}</td>
-							{% else %}
-								<td class="text-success">{{ item.quantity }}</td>
-							{% endif %} {% endcomment %}
-							<td class="text-center">{{ stock.reorder_point }}</td>
-							<td class="align-middle text-center">
-                                <button type="button" class="btn btn-outline-info btn-sm edit-stock" href="javascript:void(0)" data-id="{{ item.pk }}" title="Edit">
-                                    EDIT
-                                </button>
-                                <a class="btn btn-outline-primary btn-sm" href="{% url 'stock-record' item.pk %}" data-id="{{ item.pk }}" title="View">
-                                    INFO
-                                </a>
-                            </td>
-						</tr>
-						{% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+    </div>
+    <div class="body">
+            <table class="table table-sm table-responsive table-hover" style="width:100%" id="stock-list"> {% comment %} display compact {% endcomment %}
+                <thead class="">
+                    <tr class="">
+                        <th class="text-center dark-text">#</th>
+                        <th class="text-center dark-text">Group</th>
+                        <th class="text-center dark-text">Code</th>
+                        <th class="text-center dark-text">Producer</th>
+                        <th class="text-center dark-text">Location</th>
+                        <th class="text-center dark-text">Zone</th>
+                        <th class="text-center dark-text">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stocks %}
+                    <tr>
+                        <td class="align-canter text-center light-text">{{ forloop.counter }}</td>
+                        <td class="align-canter text-center light-text">{% if stock.item.group is not None %}{{ stock.item.group.name }}{% else %}{{stock.item.group}}{% endif %}</td>
+                        <td class="align-canter text-center light-text" >{% if stock.item.code is not None and stock.item.code != '' %}{{stock.item.code}}{% elif stock.item.serial_number is not None and stock.item.serial_number != '' %}{{stock.item.serial_number}}{% else %}{{stock.item.id}}{% endif %}</td>
+                        <td class="align-canter text-center light-text">{% if stock.item.producer is not None %}{{ stock.item.producer.name }}{% else %}{{stock.item.producer}}{% endif %}</td>
+                        <td class="align-canter text-center light-text">{% if stock.zone.location is not None %}{{ stock.zone.location.name }}{% else %}{{stock.zone.location}}{% endif %}</td>
+                        <td class="align-canter text-center light-text" id="{{stock.zone.id}}">{% if stock.zone is not None %}{{ stock.zone.name }}{% else %}{{stock.zone}}{% endif %}</td>
+                        <td class="align-center text-center light-text">
+                            <button type="button" class="btn btn-bg-dark btn-sm stock-data" href="javascript:void(0)" data-id="{{ stock.pk }}" data-old="{{stock.old}}" title="Info">
+                                INFO
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
     </div>
 </div>
 {% endblock content %}
 
 {% block ScriptBlock %}
 <script>
+    let tBody = document.querySelector('tbody')
+    let body = document.querySelector('body')
+    let groups = {{ groups | safe }}
+    let producers = {{ producers | safe }}
+    let zones = {{ zones | safe }}
+    let locations = {{ locations | safe }}
     $(function() {
+        $('#add_new').click(function() {
+            let headerDiv = document.createElement('div')
+            headerDiv.classList.add("cardHeader")
+            let title = document.createElement('h4')
+            title.classList.add('dark-text')
+            title.innerHTML = "Add stock"
+            let addIcon = document.createElement('i')
+            addIcon.classList.add('fa', 'fa-plus')
+            let anchor = document.createElement('div')
+            let titleDiv = document.createElement('div')
+            titleDiv.classList.add('titleDiv')
+            titleDiv.appendChild(addIcon)
+            titleDiv.appendChild(title)
+            anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
+            anchor.addEventListener('click', (e)=>{
+                $('#uni_modal').modal('hide');
+            })
+            let icon = document.createElement('i')
+            icon.classList.add('fa', 'fa-times')
+            anchor.appendChild(icon)
+            headerDiv.appendChild(titleDiv)
+            headerDiv.appendChild(anchor)
+            uni_modal(headerDiv, '{% url "manage-stock" "add" %}', 'modal-md')
+            let modalFooter = document.querySelector('.modal-footer')
+            modalFooter.innerHTML = ''
+            if(modalFooter.classList.contains('hidden')){
+                modalFooter.classList.remove('hidden')
+            }
+            let createButton = document.createElement('button')
+            createButton.classList.add('btn', 'selected', 'edit')
+            let createIcon = document.createElement('i')
+            createIcon.classList.add('fa', 'fa-plus')
+            createButton.appendChild(createIcon)
+            let createPar = document.createElement('p')
+            createPar.appendChild(document.createTextNode('Create'))
+            createButton.appendChild(createPar)
+            createButton.addEventListener('click', (e)=>{
+                $('#uni_modal form').submit()
+            })
+            modalFooter.appendChild(createButton)
+        })
+        $('#use').click(function() {
+            let headerDiv = document.createElement('div')
+            headerDiv.classList.add("cardHeader")
+            let title = document.createElement('h4')
+            title.classList.add('dark-text')
+            title.innerHTML = "Use Item"
+            let addIcon = document.createElement('i')
+            addIcon.classList.add('fa', 'fa-box-open')
+            let anchor = document.createElement('div')
+            let titleDiv = document.createElement('div')
+            titleDiv.classList.add('titleDiv')
+            titleDiv.appendChild(addIcon)
+            titleDiv.appendChild(title)
+            anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
+            anchor.addEventListener('click', (e)=>{
+                $('#uni_modal').modal('hide');
+            })
+            let icon = document.createElement('i')
+            icon.classList.add('fa', 'fa-times')
+            anchor.appendChild(icon)
+            headerDiv.appendChild(titleDiv)
+            headerDiv.appendChild(anchor)
+            uni_modal(headerDiv, '{% url "manage-stock" "use" %}', 'modal-md')
+            let modalFooter = document.querySelector('.modal-footer')
+            modalFooter.innerHTML = ''
+            if(modalFooter.classList.contains('hidden')){
+                modalFooter.classList.remove('hidden')
+            }
+            let createButton = document.createElement('button')
+            createButton.classList.add('btn', 'highlight-color', 'edit')
+            let createIcon = document.createElement('i')
+            createIcon.classList.add('fa', 'fa-reply')
+            createButton.appendChild(createIcon)
+            let createPar = document.createElement('p')
+            createPar.appendChild(document.createTextNode('Use'))
+            createButton.appendChild(createPar)
+            createButton.addEventListener('click', (e)=>{
+                let telescopeInput = document.querySelector('#telescope')
+                if(telescopeInput.value != 0){
+                    $('#uni_modal form').submit()
+                }else{
+                    console.log('value is 0')
+                }
+            })
+            modalFooter.appendChild(createButton)
+        })
+        $(document).off('click')
+        $(document).on('click', '.stock-data', function(e) {
+            let id = e.target.dataset.id
+            let old = e.target.dataset.old
+            let baseUrl = "{% url 'stock-record' 0 %}";
+            let finalUrl = baseUrl.replace('0', id);
+            let headerDiv = document.createElement('div')
+            let modalFooter = document.querySelector('.modal-footer')
+            headerDiv.classList.add("cardHeader")
+            let title = document.createElement('h4')
+            title.classList.add('dark-text')
+            title.innerHTML = "Stock Information"
+            let anchor = document.createElement('div')
+            anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
+            anchor.addEventListener('click', (e)=>{
+                $('#uni_modal').modal('hide');
+            })
+            let icon = document.createElement('i')
+            icon.classList.add('fa', 'fa-times')
+            anchor.appendChild(icon)
+            headerDiv.appendChild(title)
+            headerDiv.appendChild(anchor)
+            uni_modal(headerDiv, finalUrl, 'modal-md')
+            {% if user|has_group:"admin" or user|has_group:"technician" %}
+                let editButton = document.createElement('button')
+                editButton.classList.add('btn', 'selected', 'edit')
+                let editIcon = document.createElement('i')
+                editIcon.classList.add('fa', 'fa-dolly')
+                editButton.appendChild(editIcon)
+                let editPar = document.createElement('p')
+                editPar.appendChild(document.createTextNode('Move'))
+                editButton.appendChild(editPar)
+                editButton.addEventListener('click', ()=>{
+                    $('#uni_modal').modal('hide');
+                    let div = document.createElement('div')
+                    div.classList.add("cardHeader")
+                    let title = document.createElement('h4')
+                    title.classList.add('dark-text')
+                    title.innerHTML = "Move Stock"
+                    let anchor = document.createElement('div')
+                    let editIcon = document.createElement('i')
+                    editIcon.classList.add('fa', 'fa-edit')
+                    anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
+                    anchor.addEventListener('click', (e)=>{
+                        $('#uni_modal').modal('hide');
+                        setTimeout(()=>{
+                            uni_modal(headerDiv, finalUrl, 'modal-md')
+                            modalFooter.innerHTML = ''
+                            modalFooter.appendChild(editButton)
+                        }, 300)
+                    })
+                    let icon = document.createElement('i')
+                    icon.classList.add('fa', 'fa-arrow-left')
+                    let titleDiv = document.createElement('div')
+                    titleDiv.classList.add('titleDiv')
+                    titleDiv.appendChild(editIcon)
+                    titleDiv.appendChild(title)
+                    anchor.appendChild(icon)
+                    div.appendChild(titleDiv)
+                    div.appendChild(anchor)
+                    let editUrl = '{% url "manage-stock-pk" 0 %}'
+                    let finalEditUrl = editUrl.replace('0', id);
+                    setTimeout(()=>{console.log('switching modal'); uni_modal(div, finalEditUrl, 'modal-md')}, 300)
+                    modalFooter.innerHTML = ''
+                    let saveButton = document.createElement('button')
+                    saveButton.classList.add('btn', 'selected', 'edit')
+                    let saveIcon = document.createElement('i')
+                    saveIcon.classList.add('fa', 'fa-check')
+                    saveButton.appendChild(saveIcon)
+                    let savePar = document.createElement('p')
+                    savePar.appendChild(document.createTextNode('Move'))
+                    saveButton.appendChild(savePar)
+                    saveButton.addEventListener('click', (e)=>{
+                        $('#uni_modal form').submit()
+                    })
+                    modalFooter.appendChild(saveButton)
+                })
+                if(modalFooter.classList.contains('hidden')){
+                    modalFooter.classList.remove('hidden')
+                }
+                let oldButton = document.createElement('button')
+                if (old == 'False'){
+                    oldButton.classList.add('btn', 'highlight-color', 'edit')
+                    oldButton.id = id
+                    let oldIcon = document.createElement('i')
+                    oldIcon.classList.add('fa', 'fa-warning')
+                    oldButton.appendChild(oldIcon)
+                    let oldPar = document.createElement('p')
+                    oldPar.appendChild(document.createTextNode('Mark as old'))
+                    oldButton.appendChild(oldPar)
+                    oldButton.addEventListener('click', (e)=>{
+                        var el = $('<div>')
+                        el.addClass("alert alert-danger err-msg")
+                        el.hide()
+                        $.ajax({
+                            url: '{% url "mark-stock-old" %}',
+                            headers: {'X-CSRFToken': "{{csrf_token}}"},
+                            method: 'POST',
+                            data: {"id": id},
+                            dataType: 'json',
+                            error: err => {
+                                el.text('An error occurred.')
+                                el.show('slow')
+                                end_loader()
+                            },
+                            success: function(resp) {
+                                if (resp.status == 'success') {
+                                    let oldPill = document.querySelector('.oldPill')
+                                    if (oldPill.classList.contains('hidden')){
+                                        oldPill.classList.remove('hidden')
+                                    }
+                                    oldButton.classList.add('btn', 'highlight-color', 'edit')
+                                    oldButton.innerHTML = ''
+                                    oldButton.id = id
+                                    let oldIcon = document.createElement('i')
+                                    oldIcon.classList.add('fa', 'fa-trash')
+                                    oldButton.appendChild(oldIcon)
+                                    let oldPar = document.createElement('p')
+                                    oldPar.appendChild(document.createTextNode('Delete'))
+                                    oldButton.appendChild(oldPar)
+                                    oldButton.addEventListener('click', (e)=>{
+                                        var el = $('<div>')
+                                        el.addClass("alert alert-danger err-msg")
+                                        el.hide()
+                                        $.ajax({
+                                            url: '{% url "delete-stock" %}',
+                                            headers: {'X-CSRFToken': "{{csrf_token}}"},
+                                            method: 'POST',
+                                            data: {"id": id},
+                                            dataType: 'json',
+                                            error: err => {
+                                                el.text('An error occurred.')
+                                                el.show('slow')
+                                                end_loader()
+                                            },
+                                            success: function(resp) {
+                                            if (resp.status == 'success') {
+                                                location.reload()
+                                            } else if (!!resp.msg) {
+                                                el.text('An error occurred.')
+                                                el.show('slow')
+                                            } else {
+                                                el.text('An error occurred.')
+                                                el.show('slow')
+                                            }
+                                            end_loader()
+                                            }
+                                        })
+                                    })
+                                } else if (!!resp.msg) {
+                                    el.text('An error occurred.')
+                                    el.show('slow')
+                                } else {
+                                    el.text('An error occurred.')
+                                    el.show('slow')
+                                }
+                                end_loader()
+                            }
+                        })
+                    })
+                }else{
+                    oldButton.classList.add('btn', 'highlight-color', 'edit')
+                    oldButton.id = id
+                    let oldIcon = document.createElement('i')
+                    oldIcon.classList.add('fa', 'fa-trash')
+                    oldButton.appendChild(oldIcon)
+                    let oldPar = document.createElement('p')
+                    oldPar.appendChild(document.createTextNode('Delete'))
+                    oldButton.appendChild(oldPar)
+                    oldButton.addEventListener('click', (e)=>{
+                        var el = $('<div>')
+                        el.addClass("alert alert-danger err-msg")
+                        el.hide()
+                        $.ajax({
+                            url: '{% url "delete-stock" %}',
+                            headers: {'X-CSRFToken': "{{csrf_token}}"},
+                            method: 'POST',
+                            data: {"id": id},
+                            dataType: 'json',
+                            error: err => {
+                                el.text('An error occurred.')
+                                el.show('slow')
+                                end_loader()
+                            },
+                            success: function(resp) {
+                                if (resp.status == 'success') {
+                                    location.reload()
+                                } else if (!!resp.msg) {
+                                    el.text('An error occurred.')
+                                    el.show('slow')
+                                } else {
+                                    el.text('An error occurred.')
+                                    el.show('slow')
+                                }
+                                end_loader()
+                            }
+                        })
+                    })
+                }
+                modalFooter.innerHTML = ''
+                modalFooter.appendChild(editButton)
+                if (old != null){
+                    modalFooter.appendChild(oldButton)
+                }
+            {% else %}
+                if(!modalFooter.classList.contains('hidden')){
+                    modalFooter.classList.add('hidden')
+                }
+            {% endif %}
+        });
+
         //remove the default 'Search' text for all DataTable search boxes
         $.extend(true, $.fn.dataTable.defaults, {
             language: {
                 search: ""
             }
         });
-        $('#item-list').DataTable({
-            layout: {
-                top1Start: {
-                    buttons: ['copy', 'csv', 'excel', 'print']
+        let table = $('#stock-list').DataTable({
+            dom: '<"top1"<"top1Start"><"top1End"Bf>>t<"bottom"<"bottomStart"i><"bottomCenter"l><"bottomEnd"p>>',
+            buttons: [{
+                extend: 'copy',
+                exportOptions: {
+                    columns: ':not(:eq(6))'
                 }
             },
+            {
+                extend: 'csv',
+                exportOptions: {
+                    columns: ':not(:eq(6))'
+                }
+            },
+            {
+                extend: 'excel',
+                exportOptions: {
+                    columns: ':not(:eq(6))'
+                }
+            },
+            {
+                extend: 'print',
+                exportOptions: {
+                    columns: ':not(:eq(6))'
+                }
+            }],
             columnDefs: [
-                {orderable: false, targets: [1,2,3,4,5]},
-            ]
+                {orderable: false, targets: [0,3,4,5,6]},
+                {targets: [4,6], 
+                    render: function(data, type, row) {
+                        return '<div class="text-truncate" style="max-width: 100px;">' + data + '</div>';
+                    }
+                }
+            ],
+            order: [[1, 'asc']],
         });
+        let data = table.data().toArray()
+        let filterLabels = ['Group: ', 'Producer: ', 'Location: ', 'Zone: ']
+        let mainDiv = document.querySelector('.top1Start')
+        let generalDiv = document.createElement('div')
+        let input = null
+        mainDiv.classList.add('filters')
+        
+
+        for (let labelIndex in filterLabels){
+            let intIndex = parseInt(labelIndex)+1
+            let label = filterLabels[labelIndex]
+            let divInput = document.createElement('div')
+            divInput.classList.add('filterInput')
+            input = document.createElement('select')
+            input.classList.add('rounded-pill')
+            defaultOption = document.createElement('option')
+            defaultOption.appendChild(document.createTextNode('All'))
+            input.appendChild(defaultOption)
+            let parsedLabel = label.replace(': ', '')
+            input.setAttribute('id', parsedLabel)
+            if(parsedLabel.toLowerCase().includes('gro')){
+                input.addEventListener('change', (e)=>{
+                    if (e.target.options[e.target.selectedIndex].text != 'All'){
+                        table.column(1).search(e.target.options[e.target.selectedIndex].text).draw();
+                    }else{
+                        table.columns(1).search('').draw();
+                    }
+                })
+                for (index in groups){
+                    let option = document.createElement('option')
+                    option.setAttribute('value', groups[index].id)
+                    option .appendChild(document.createTextNode(groups[index].name))
+                    input.appendChild(option)
+                }
+            }else if (parsedLabel.toLowerCase().includes('pro')){
+                input.addEventListener('change', (e)=>{
+                    if (e.target.options[e.target.selectedIndex].text != 'All'){
+                        table.column(3).search(e.target.options[e.target.selectedIndex].text).draw();
+                    }else{
+                        table.columns(3).search('').draw();
+                    }
+                })
+                for (index in producers){
+                    let option = document.createElement('option')
+                    option.setAttribute('value', producers[index].id)
+                    option .appendChild(document.createTextNode(producers[index].name))
+                    input.appendChild(option)
+                }
+            }else if(parsedLabel.toLowerCase().includes('loc')){
+                input.addEventListener('change', (e)=>{
+                    if (e.target.options[e.target.selectedIndex].text != 'All'){
+                        table.column(4).search(e.target.options[e.target.selectedIndex].text).draw();
+                    }else{
+                        table.columns(4).search('').draw();
+                    }
+                })
+                for (index in locations){
+                    let option = document.createElement('option')
+                    option.setAttribute('value', locations[index].id)
+                    option .appendChild(document.createTextNode(locations[index].name))
+                    input.appendChild(option)
+                }
+            }else if(parsedLabel.toLowerCase().includes('zon')){
+                input.addEventListener('change', (e)=>{
+                    if (e.target.options[e.target.selectedIndex].text != 'All'){
+                        table.draw()
+                    }else{
+                        table.columns(5).search('').draw();
+                    }
+                })
+                for (index in zones){
+                    let option = document.createElement('option')
+                    option.setAttribute('value', zones[index].id)
+                    let location = locations.filter(element => element['id'] == zones[index].location)[0]
+                    option .appendChild(document.createTextNode(location.name+" - "+zones[index].name))
+                    input.classList.add('zoneSelect')
+                    input.appendChild(option)
+                }
+            }
+            let inputLabel = document.createElement('label')
+            inputLabel.appendChild(document.createTextNode(label))
+            inputLabel.setAttribute('for', parsedLabel)
+            divInput.appendChild(inputLabel)
+            divInput.appendChild(input)
+            generalDiv.appendChild(divInput)
+            if (intIndex % 2 === 0){
+                mainDiv.appendChild(generalDiv)
+                generalDiv = document.createElement('div')
+            }
+        }
+        $.fn.dataTable.ext.search.push(
+            function(settings, data, dataIndex) {
+                let selectedValue = document.querySelector('#Zone').value
+                let cellId = table.cell(dataIndex, 5).node().id; 
+
+                    if (selectedValue === 'All' || selectedValue === cellId) {
+                        return true; 
+                    }
+                    return false;
+            }
+        );
+
+        table.draw();
         //custom format of Search boxes
         $('[type=search]').each(function () {
             $(this).attr("placeholder", "Search...");
             $(this).before('<span class="fa fa-search"></span>');
         });
+        let top1End = document.querySelector('.top1End')
+        let clearFilterButton = document.createElement('div')
+        clearFilterButton.classList.add('btn', 'btn-clear', 'rounded-xl')
+        clearFilterButton.appendChild(document.createTextNode('Clear filters'))
+        clearFilterButton.addEventListener('click', ()=>{
+            let inputs = document.querySelectorAll('.filterInput>select')
+            inputs.forEach(input =>{
+                let event = new Event('change');
+                input.selectedIndex = 0
+                input.dispatchEvent(event);
+            })
+        })
+        top1End.appendChild(clearFilterButton)
     })
+
+    function delete_item($id) {
+        start_loader();
+        var _this = $(this)
+        $('.err-msg').remove();
+        var el = $('<div>')
+        el.addClass("alert alert-danger err-msg")
+        el.hide()
+        $.ajax({
+            url: '{% url "delete-item" %}',
+            headers: {'X-CSRFToken': "{{csrf_token}}"},
+            method: 'POST',
+            data: {id: $id},
+            dataType: 'json',
+            error: err => {
+                console.log(err)
+                el.text('An error occurred.')
+                el.show('slow')
+                end_loader()
+            },
+            success: function(resp) {
+                if (resp.status == 'success') {
+                    location.reload()
+                } else if (!!resp.msg) {
+                    el.text('An error occurred.')
+                    el.show('slow')
+                } else {
+                    el.text('An error occurred.')
+                    el.show('slow')
+                }
+                end_loader()
+            }
+        })
+    }
 </script>
 {% endblock ScriptBlock %}

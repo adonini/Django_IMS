@@ -47,6 +47,11 @@ class Group(models.Model):
     class Meta:
         db_table = 'groups'
 
+    def group_stock(self):
+        stock_items = Stock.objects.filter(item__group = self.pk)
+        current_stock = len(stock_items)
+        return current_stock
+
 class Producer(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
     contact_person = models.CharField(max_length=100, blank=True, null=True)
@@ -71,6 +76,15 @@ class Telescope(models.Model):
     class Meta:
         db_table = 'telescopes'
 
+class Telescope_structure(models.Model):
+    name = models.CharField(max_length=100, blank=True, null=True)
+    telescope = models.ForeignKey(Telescope, on_delete=models.CASCADE, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'telescope_structures'
+
 class Item_status(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -89,27 +103,12 @@ class Item(models.Model):
     expiration_date = models.DateField(blank=True, null=True)
     datasheet_url = models.CharField(max_length=100, blank=True, null=True)
     status = models.ForeignKey(Item_status, on_delete=models.SET_NULL, null=True)
-    telescope = models.ForeignKey(Telescope, on_delete=models.SET_NULL, null=True)
+    telescope = models.ForeignKey(Telescope_structure, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'items'
-
-    def __str__(self):
-        return self.code + ' - ' + self.name  # join code and name
-
-    def count_inventory(self):
-        stocks = Stock.objects.filter(item=self)
-        stockIn = 0
-        stockOut = 0
-        for elements in stocks:
-            if elements.type.id == 1:
-                stockIn = int(stockIn) + int(elements.quantity)
-            else:
-                stockOut = int(stockOut) + int(elements.quantity)
-        available = stockIn - stockOut
-        return available
     
 class Stock_Type(models.Model):
     name = models.CharField(max_length=200)
@@ -143,19 +142,26 @@ class Stock(models.Model):
     zone= models.ForeignKey(Zone, on_delete=models.SET_NULL, null=True)
     stock_type = models.ForeignKey(Stock_Type, on_delete=models.SET_NULL, null=True)
     item = models.ForeignKey(Item, on_delete=models.CASCADE, blank=True, null=True)
-    quantity = models.IntegerField(default=1)
+    quantity = models.IntegerField(default=1, null=True)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
+    old = models.BooleanField(default=False, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)  
 
     class Meta:
         db_table = 'stocks'
-
-    def __str__(self):
-        if self.item:
-            return self.item.code + ' - ' + self.item.name
-        else:
-            return "No associated item"
+    
+    def count_inventory(self):
+        stocks = Stock.objects.filter(item__group__id=self.item.group.id, zone = self.zone)
+        stockIn = 0
+        stockOut = 0
+        for elements in stocks:
+            if elements.stock_type.id == 1:
+                stockIn += int(elements.quantity)
+            else:
+                stockOut += int(elements.quantity)
+        available = stockIn - stockOut
+        return available
 
 class Payment_sources(models.Model):
     name = models.CharField(max_length=200)
@@ -173,22 +179,6 @@ class Purchase_status(models.Model):
     class Meta:
         db_table = 'purchase_statuses'
 
-class Purchase_group(models.Model):
-    order_number = models.CharField(max_length=100, blank=True, null=True)
-    tracking_url = models.CharField(max_length=100, blank=True, null=True)
-    shipping_cost = models.FloatField(blank=True, null=True)
-    status = models.ForeignKey(Purchase_status, on_delete=models.SET_NULL, null=True)
-    payment = models.ForeignKey(Payment_sources, on_delete=models.SET_NULL, null=True)
-    creator_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="creator")
-    receiver_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="receiver")
-    standard_lead_time = models.IntegerField(default=7)
-    expected_delivery_date = models.DateField(blank=True, null=True)
-    delivery_date = models.DateField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'purchase_groups'
 
 class Supplier(models.Model):
     name = models.CharField(max_length=200)
@@ -204,12 +194,41 @@ class Supplier(models.Model):
     class Meta:
         db_table = 'suppliers'
 
+class Purchase_group(models.Model):
+    order_number = models.CharField(max_length=100, blank=True, null=True)
+    tracking_url = models.CharField(max_length=100, blank=True, null=True)
+    shipping_cost = models.FloatField(blank=True, null=True)
+    status = models.ForeignKey(Purchase_status, on_delete=models.SET_NULL, null=True)
+    payment = models.ForeignKey(Payment_sources, on_delete=models.SET_NULL, null=True)
+    creator_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="creator")
+    receiver_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="receiver")
+    standard_lead_time = models.IntegerField(default=7, null=True)
+    expected_delivery_date = models.DateField(blank=True, null=True)
+    order_date = models.DateField(blank=True, null=True)
+    delivery_date = models.DateField(blank=True, null=True)
+    supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'purchase_groups'
+
+    def calculate_amount(self):
+        purchases = Purchase.objects.filter(purchase_group_id=self.pk)
+        amount = 0
+        for purchase in purchases:
+            amount += purchase.price_per_item
+        return amount
+    
+    def items_purchased(self):
+        purchases = Purchase.objects.filter(purchase_group_id=self.pk)
+        return len(purchases)
+
 class Purchase(models.Model):
     price_per_item = models.FloatField(blank=True, null=True)
     item = models.ForeignKey(Item, on_delete=models.CASCADE, null=True)
-    quantity = models.IntegerField(default=1)
+    quantity = models.IntegerField(default=1, null=True)
     purchase_group = models.ForeignKey(Purchase_group, on_delete=models.CASCADE)
-    supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

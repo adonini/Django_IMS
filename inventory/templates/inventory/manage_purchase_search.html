@@ -1,0 +1,35 @@
+{% comment %} {% load crispy_forms_tags %}
+<div class="container-fluid">
+    <form method="post" id="purchase-form">
+        {% csrf_token %}
+        {{ form|crispy }}
+    </form>
+</div> {% endcomment %}
+<div class="container-fluid">
+    <p class="alert hidden"></p>
+    <h3 class="">Item List</h3>
+    <p class="light-text">Select the items by clicking on them. <br> NOTE: Specify a price to be able to select the items . </p>
+    <table class="table table-sm table-responsive table-hover" style="width:100%" id="item-list"> {% comment %} display compact {% endcomment %}
+        <thead class="">
+            <tr class="align-center">
+                <th class="text-center dark-text">#</th>
+                <th class="text-center dark-text">Group</th>
+                <th class="text-center dark-text">Code</th>
+                <th class="text-center dark-text">Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="align-center text-center light-text">{{ forloop.counter }}</td>
+                <td class="align-center text-center light-text" id="{{item.id}}">{% if item.group is not None %}{{ item.group.name }}{% else %}{{item.group}}{% endif %}</td>
+                <td class="align-center text-center light-text" >{% if item.code is not None and item.code != '' %}{{item.code}}{% elif item.serial_number is not None and item.serial_number != '' %}{{item.serial_number}}{% else %}{{item.id}}{% endif %}</td>
+                {% if item.price is not None %}<td class="align-center text-center light-text">{% if item.price is not None and item.price != "" %}{{ item.price }}{% else %}{{ item.price }}{% endif %}</td>{% else %}<td class="align-center text-center light-text"><input type="text" id="price" class="w-75"></td> {% endif %}
+                <!--| intcomma-->
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<script>
+</script>

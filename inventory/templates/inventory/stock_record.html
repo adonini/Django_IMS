@@ -1,114 +1,40 @@
-{% extends "inventory/base.html" %}
 {% load humanize %}
-
-{% block content %}
-
-<div class="container">
-    <div class="card card-default border-dark shadow">
-        <div class="card-header bg-primary">
-            <div class="w-100 d-flex justify-content-between">
-                <strong>Stock {{ item.code }} {{ item.name }}</strong>
-                <button class="btn btn-dark btn-sm rounded-0 bg-gradient px-3" type="button" id="add_stock"><i class="fa fa-plus"></i> Add Stock</button>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="container-fluid">
-                <fieldset class="border-bottom">
-                    <legend>Item Details</legend>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <ul class="list-group list-group-flush">
-                                <li class="list-group-item"><strong>Description</strong> <br> {{ item.description }}</li>
-                                <li class="list-group-item"><strong>Category</strong> <br> {{ item.category }}</li>
-                                <li class="list-group-item"><strong>Producer</strong> <br> {{ item.producer }}</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-6">
-                            <ul class="list-group list-group-flush">
-                                <li class="list-group-item"><strong>Model</strong> <br> {{ item.model }}</li>
-                                <li class="list-group-item"><strong>In Stock</strong> <br> {{ item.count_inventory }}</li>
-                                <li class="list-group-item"><strong>Serials</strong> <br> {{ item.split_serials }}</li>
-                            </ul>
-                        </div>
-                    </div>
-                </fieldset>
-                <br>
-                <fieldset>
-                    <legend>History</legend>
-                    <div class="table-responsive">
-                        <table class="table table-bordered" id="stock-tbl">
-                            <thead>
-                                <th class="text-center">#</th>
-                                <th class="text-center">Date</th>
-                                <th class="text-center">Quantity</th>
-                                <th class="text-center">Price</th>
-                                <th class="text-center">Type</th>
-                                <th class="text-center">User</th>
-                                <th class="text-center">Action</th>
-                            </thead>
-                            <tbody>
-                                {% for stock in stocks %}
-                                    <tr>
-                                        <td class="text-center">{{ forloop.counter }}</td>
-                                        <td class="">{{ stock.date_created|date:"Y-m-d h:i A" }}</td>
-                                        <td class="text-center">{{ stock.quantity|floatformat:0|intcomma }}</td>
-                                        <td class="text-center">{{ stock.price }} €</td>
-                                        <td class="text-center">
-                                            {% if stock.type.id == 1 %}
-                                                <span class="badge px-3 rounded-pill bg-success bg-gradient">{{stock.type.name}}</span>
-                                            {% else %}
-                                                <span class="badge px-3 rounded-pill bg-danger bg-gradient">{{stock.type.name}}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="">{{ stock.user }}</td>
-                                        <td class="text-center">
-                                            {% if stock.type.id == 1 %}
-                                                <a class="btn btn-outline-info btn-sm edit-data" href="javascript:void(0)" data-id="{{ stock.pk }}" title="Edit">
-                                                    Edit
-                                                </a>
-                                                <button class="btn btn-outline-danger btn-sm delete-data" type="button" data-id="{{ stock.pk }}" title="Delete">
-                                                    Delete
-                                                </button>
-                                            {% else %}
-                                                ------
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </fieldset>
-            </div>
-        </div>
-        <div class="card-footer">
-            <a href="{% url 'stock' %}" class="btn btn-dark">Back</a>
-        </div>
-    </div>
+<h5>General Information</h5>
+<div class="itemContent">
+    <ul class="list-group list-group-flush ul-left">
+        <li class="list-group-item"><strong>Group</strong> <br> {{ stock.item.group.name }}</li>
+        <li class="list-group-item"><strong>Code</strong> <br> {% if stock.item.code is not None and stock.item.code != '' %}{{stock.item.code}}{% else %}None{% endif %}</li>
+        <li class="list-group-item"><strong>Serial Number</strong> <br> {% if stock.item.serial_number is not None and stock.item.serial_number != '' %}{{stock.item.serial_number}}{% else %}None{% endif %}</li>
+    </ul>
+    <ul class="list-group list-group-flush ul-right">
+        <li class="list-group-item"><strong>Location</strong> <br> {% if stock.zone.location is not None %}{{ stock.zone.location.name }}{% else %}{{ stock.zone.location }}{% endif %}</li>
+        <li class="list-group-item"><strong>Zone</strong> <br> {% if stock.zone is not None %}{{ stock.zone.name }}{% else %}{{ stock.zone }}{% endif %}</li>
+        <li class="list-group-item"><strong>Total group quantity</strong> <br> {{ stock.count_inventory}}</li>
+    </ul>
+</div> 
+<div class="mt-3 d-flex justify-content-center oldPill {% if not stock.old %}hidden{% endif %}">
+    <p class="text-center justify-content-center text-white edit bg-dark rounded-pill w-25">Old</p>
 </div>
-{% endblock content %}
-{% block ScriptBlock %}
-<script>
-    $(function() {
-        $('#add_stock').click(function() {
-            uni_modal("<i class='fa fa-plus'></i> Add New Stock to <b>{{ item }}</b>", '{% url "manage-stock" item.pk %}')
-        })
-        //$('.edit-data').click(function() {
-        //    uni_modal("<i class='fa fa-edit'></i> Update Stock", '{% url "manage-stock" item.pk %}/' + $(this).attr('data-id'))
-        //})
-
-        $('.delete-data').click(function() {
-            _conf("Are you sure to delete this Stock Data?", 'delete_stock', [$(this).attr('data-id')])
-        })
-        // Initialize DataTable only if it's not already initialized
-        if (!$.fn.DataTable.isDataTable('#stock-tbl')) {
-            $('#stock-tbl').DataTable({
-                columnDefs: [{
-                    orderable: false,
-                    targets: 4
-                }],
-            });
-        }
-    })
-</script>
-{% endblock ScriptBlock %}
+<h5>Stock movements</h5>
+<table class="table table-sm table-responsive table-hover" style="width:100%" id="stock-movements"> {% comment %} display compact {% endcomment %}
+    <thead class="">
+        <tr class="">
+            <th class="text-center dark-text">#</th>
+            <th class="text-center dark-text">Date</th>
+            <th class="text-center dark-text">Quantity</th>
+            <th class="text-center dark-text">Type</th>
+            <th class="text-center dark-text">User</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for stock in stock_entries %}
+            <tr>
+                <td class="align-canter text-center light-text">{{ forloop.counter }}</td>
+                <td class="align-canter text-center light-text" id="{{stock.item.id}}">{{stock.created_at | date:"d/m/Y"}}</td>
+                <td class="align-canter text-center light-text">{{stock.quantity}}</td>
+                <td class="align-canter text-center light-text"><div class="{{stock.stock_type.name | cut:" "}}">{{stock.stock_type.name}}</div></td>
+                <td class="align-canter text-center light-text">{{stock.user}}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

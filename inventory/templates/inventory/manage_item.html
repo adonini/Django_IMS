@@ -1,62 +1,82 @@
 <div class="container-fluid">
+    <div class="err-msg"></div>
     <form action=" " id="item-form">
         {% csrf_token %}
         <input type="hidden" name="id" value="{{ item.id }}">
-        <div class="form-group mb-3">
-            <label for="group" class="control-label">Group</label>
-            <select class="form-control rounded-0" name="group" id="group">
-                <option value="" {% if not item.group %} selected {% endif %}>-----</option>
-                {% for group in groups %}
-                    <option value="{{ group.id }}" {% if group.id == item.group.id %} selected {% endif %}>{{ group.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="form-group mb-3 ">
-            <label for="serial_number" class="control-label">Serial Number</label>
-            <input type="text" class="form-control rounded-0" id="serial_number" name="serial_number" value="{{ item.serial_number }}" required>
-        </div>
-        <div class="form-group mb-3 ">
-            <label for="code" class="control-label">Code</label>
-            <input type="text" class="form-control rounded-0" id="code" name="code" value="{{ item.code }}" required>
-        </div>
-        <div class="form-group mb-3 ">
-            <label for="status" class="control-label">Producer</label>
-            <select class="form-control rounded-0" name="producer" id="producer">
-                <option value="" {% if not item.producer %} selected {% endif %}>-----</option>
-                {% for producer in producers %}
-                    <option value="{{ producer.id }}" {% if producer.id == item.producer.id %} selected {% endif %}>{{ producer.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="form-group mb-3 ">
-            <label for="price" class="control-label">Price</label>
-            <input type="number" step="any" class="form-control rounded-0" id="price" name="price" value="{{ item.price }}">
-        </div>
-        <div class="form-group mb-3 ">
-            <label for="expiration_date" class="control-label">Expiration date</label>
-            <input type="date" class="form-control rounded-0" id="expiration_date" name="expiration_date" value="{{ item.expiration_date }}">
-        </div>
-        <div class="form-group mb-3 ">
-            <label for="datasheet_url" class="control-label">Datasheet Url</label>
-            <input type="text" class="form-control rounded-0" id="datasheet_url" name="datasheet_url" value="{{ item.datasheet_url }}">
-        </div>
-        <div class="form-group mb-3 ">
-            <label for="status" class="control-label">Status</label>
-            <select class="form-control rounded-0" name="status" id="status">
-                <option value="" {% if not item.status %} selected {% endif %}>-----</option>
-                {% for status in status %}
-                    <option value="{{ status.id }}" {% if status.id == item.status.id %} selected {% endif %}>{{ status.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="form-group mb-3 ">
-            <label for="telescope" class="control-label">Telescope</label>
-            <select class="form-control rounded-0" name="telescope" id="telescope">
-                <option value="" {% if not item.telescope %} selected {% endif %}>-----</option>
-                {% for telescope in telescopes %}
-                    <option value="{{ telescope.id }}" {% if telescope.id == item.telescope.id %} selected {% endif %}>{{ telescope.name }}</option>
-                {% endfor %}
-            </select>
+        <div class="inputs">
+            <div class="inputsLeft">
+                <div class="form-group mb-3">
+                    <label for="group" class="control-label">Group</label>
+                    <select class="form-control rounded-0" name="group" id="group">
+                        {% if not item.group %}
+                            <option value="" disabled selected >-----</option>
+                        {% endif %}
+                        {% for group in groups %}
+                            <option value="{{ group.id }}" {% if group.id == item.group.id %} selected {% endif %}>{{ group.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-3 ">
+                    <label for="status" class="control-label">Producer</label>
+                    <select class="form-control rounded-0" name="producer" id="producer">
+                        {% if producers|length > 1 %}
+                            <option value="" {% if not item.producer %} selected {% endif %}>-----</option>
+                        {% endif %}
+                        {% for producer in producers %}
+                            <option value="{{ producer.id }}" {% if producer.id == item.producer.id or producers|length == 1 %} selected {% endif %}>{{ producer.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-3 ">
+                    <label for="serial_number" class="control-label">Serial Number</label>
+                    <input type="text" class="form-control rounded-0" id="serial_number" name="serial_number" value="{{ item.serial_number }}">
+                </div>
+                <div class="form-group mb-3 ">
+                    <label for="model" class="control-label">Model</label>
+                    <input type="text" class="form-control rounded-0" id="model" name="model" value="{{ item.model }}">
+                </div>
+                <div class="spacer hidden">
+
+                </div>
+            </div>
+            <div class="inputsRight">
+                <div class="form-group mb-3 ">
+                    <label for="price" class="control-label">Price Per Item</label>
+                    <input type="number" step="0.01" class="form-control rounded-0" id="price" name="price" min="0" value="{{ item.price }}">
+                </div>
+                <div class="form-group mb-3 ">
+                    <label for="expiration_date" class="control-label">Expiration date</label>
+                    <input type="date" class="form-control rounded-0" id="expiration_date" name="expiration_date" value="{{ item.expiration_date|date:'Y-m-d' }}">
+                </div>
+                <div class="form-group mb-3 ">
+                    <label for="code" class="control-label">Code</label>
+                    <input type="text" class="form-control rounded-0" id="code" name="code" value="{{ item.code }}">
+                </div>
+                <div class="form-group mb-3 ">
+                    <label for="datasheet_url" class="control-label">Datasheet Url</label>
+                    <input type="text" class="form-control rounded-0" id="datasheet_url" name="datasheet_url" value="{{ item.datasheet_url }}">
+                </div>
+                <div class="form-group mb-3 hidden">
+                    <label for="telescope" class="control-label">Telescope</label>
+                    <select class="form-control rounded-0" name="telescope" id="telescope">
+                        <option value="" {% if not item.telescope %} selected {% endif %}>-----</option>
+                        {% for telescope in telescopes %}
+                            <option value="{{ telescope.id }}" {% if telescope.id == item.telescope.id %} selected {% endif %}>{{ telescope.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="spacer hidden"></div>
+                    
+                </div>
+            </div>
+            {% if not item.id %}
+                <div class="below">
+                    <div>
+                        <label for="quantity">Specify the quantity of items to be created</label>
+                        <input type="number" id="quantity" name="quantity" class="form-control rounded-0 text-center" min="1" value="1">
+                    </div>
+                </div>
+            {% endif %}
         </div>
     </form>
 </div>
@@ -67,7 +87,7 @@
             e.preventDefault();
             var _this = $(this)
             $('.err-msg').remove();
-            var el = $('<div>')
+            var el = $('#alert')
             el.addClass("alert alert-danger err-msg")
             el.hide()
             if (_this[0].checkValidity() == false) {
@@ -106,6 +126,45 @@
                     end_loader()
                 }
             })
+            
         })
+    })
+    let groupSelect = document.querySelector('#group')
+    groupSelect.addEventListener('change', ()=>{
+        let el = document.querySelector('.err-msg')
+        el.classList.remove("alert", "alert-danger")
+        el.innerHTML = ""
+    })
+    let quantityInput = document.getElementById('quantity')
+    quantityInput.addEventListener('change', ()=>{
+        let codeInput = document.getElementById('code')
+        let serialInput = document.getElementById('serial_number')
+        let spacers = document.querySelectorAll('.spacer')
+        if(quantityInput.value != 1){
+            if(!codeInput.parentNode.classList.contains('hidden')){
+                codeInput.parentNode.classList.add('hidden')
+            }
+            if(!serialInput.parentNode.classList.contains('hidden')){
+                serialInput.parentNode.classList.add('hidden')
+            }
+            spacers.forEach((spacer)=>{
+                if(spacer.classList.contains('hidden')){
+                    spacer.classList.remove('hidden')
+                }
+            })
+        }else{
+            spacers.forEach((spacer)=>{
+                if(!spacer.classList.contains('hidden')){
+                    spacer.classList.add('hidden')
+                }
+            })
+            if(codeInput.parentNode.classList.contains('hidden')){
+                codeInput.parentNode.classList.remove('hidden')
+            }
+            if(serialInput.parentNode.classList.contains('hidden')){
+                serialInput.parentNode.classList.remove('hidden')
+            }
+        }
+
     })
 </script>

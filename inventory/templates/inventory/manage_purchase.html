@@ -1,0 +1,137 @@
+<div class="container-fluid">
+    <p class="guide-message"></p>
+    <form action=" " id="purchase-form">
+        {% csrf_token %}
+        <input type="hidden" name="id" value="{{ foundPurchase.pk }}">
+        <div class="inputs">
+            <div class="inputsLeft">
+                <div class="form-group mb-3 ">
+                    <label for="order_number" class="control-label">Order Number</label>
+                    <input type="text" class="form-control rounded-0" id="order_number" name="order_number" value="{{ foundPurchase.order_number }}">
+                </div>
+                <div class="form-group mb-3">
+                    <label for="supplier" class="control-label">Supplier</label>
+                    <select class="form-control rounded-0" name="supplier" id="supplier">
+                        <option value="" {% if not foundPurchase.supplier %} selected {% endif %}>-----</option>
+                        {% for supplier in suppliers %}
+                            <option value="{{ supplier.id }}" {% if supplier.id == foundPurchase.supplier.id %} selected {% endif %}>{{ supplier.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-3 ">
+                    <label for="shipping_cost" class="control-label">Shipping Cost</label>
+                    <input type="number" step="0.01" class="form-control rounded-0" id="shipping_cost" name="shipping_cost" min="0" value="{{ foundPurchase.shipping_cost }}">
+                </div>
+                <div class="form-group mb-3">
+                    <label for="payment" class="control-label">Payment</label>
+                    <select class="form-control rounded-0" name="payment" id="payment">
+                        <option value="" {% if not foundPurchase.payment %} selected {% endif %}>-----</option>
+                        {% for payment in payments %}
+                            <option value="{{ payment.id }}" {% if payment.id == foundPurchase.payment.id %} selected {% endif %}>{{ payment.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="inputsRight">
+                <div class="form-group mb-3 ">
+                    <label for="order_date" class="control-label">Order Date</label>
+                    <input type="date" class="form-control rounded-0" id="order_date" name="order_date" value="{% if foundPurchase.order_date %}{{ foundPurchase.order_date|date:'Y-m-d' }}{% else %}{{today|date:'Y-m-d'}}{% endif %}">
+                </div>
+                <div class="form-group mb-3 ">
+                    <label for="expected_delivery_date" class="control-label">Expected Delivery Date</label>
+                    <input type="date" class="form-control rounded-0" id="expected_delivery_date" name="expected_delivery_date" value="{{ foundPurchase.expected_delivery_date|date:'Y-m-d' }}">
+                </div>
+                <div class="form-group mb-3 ">
+                    <label for="standard_lead_time" class="control-label">Standard Lead Time</label>
+                    <input type="number" class="form-control rounded-0" id="standard_lead_time" name="standard_lead_time" value="{{ foundPurchase.standard_lead_time }}">
+                </div>
+                <div class="form-group mb-3 ">
+                    <label for="tracking_url" class="control-label">Tracking Url</label>
+                    <input type="text" class="form-control rounded-0" id="tracking_url" name="tracking_url" value="{{ foundPurchase.tracking_url }}">
+                </div>
+            </div>
+        </div>
+        {% if foundPurchase.id is None %}
+            <div class="below">
+                <div>
+                    <div class="manageTitle">
+                        <h4>Item List</h4><button id="add_item" class="btn btn-bg-dark rounded-xl btn-sm"><i class="fa fa-plus"></i> Add Item</button>
+                    </div>
+                    <table class="table table-sm table-responsive table-hover" style="width:100%" id="purchases-list">
+                        <thead>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endif %}
+    </form>
+</div>
+{% comment %} {% load crispy_forms_tags %}
+<div class="container-fluid">
+    <form method="post" id="purchase-form">
+        {% csrf_token %}
+        {{ form|crispy }}
+    </form>
+</div> {% endcomment %}
+<script>
+    $(document).ready(function() {
+        $('#purchase-form').submit(function(e) {
+            // preventing from page reload and default actions
+            e.preventDefault();
+            let table = $('#purchases-list').DataTable()
+            let data = []
+            table.rows().every(function (rowIdx, tableLoop, rowLoop) {
+                let rowData = this.data()
+                data.push(rowData)
+            })
+            let form = new FormData($(this)[0])
+            data.forEach((item, index)=>{
+                form.append(`data[${index}][item]`, item.item) 
+                form.append(`data[${index}][price]`, item.price) 
+            })
+            var _this = $(this)
+            $('.err-msg').remove();
+            var el = $('<div>')
+            el.addClass("alert alert-danger err-msg")
+            el.hide()
+            if (_this[0].checkValidity() == false) {
+                _this[0].reportValidity();
+                return false;
+            }
+            start_loader();
+            $.ajax({
+                url: "{% url 'add-purchase' %}",
+                data: form,
+                cache: false,
+                contentType: false,
+                processData: false,
+                method: 'POST',
+                type: 'POST',
+                dataType: 'json',
+                error: err => {
+                    console.log(err)
+                    alert("An error occured ", 'error');
+                    end_loader();
+                },
+                success: function(resp) {
+                    if (typeof resp == 'object' && resp.status == 'success') {
+                        el.removeClass("alert alert-success err-msg ")
+                        location.reload()
+                    } else if (resp.status == 'failed' && !!resp.msg) {
+                        el.html(resp.msg)
+                    } else {
+                        el.text("An error occured ", 'error');
+                        end_loader();
+                        console.error(resp)
+                    }
+                    _this.prepend(el)
+                    el.show('slow')
+                    $("html, body, .modal ").scrollTop(0);
+                    end_loader()
+                }
+            })
+        }) 
+    })
+</script>

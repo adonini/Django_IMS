@@ -1,0 +1,18 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Mi sitio de administración{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">LST IMS Admin Panel</a>
+</h1>
+{% endblock %}
+
+{% block nav-global %}
+    <img src="{% static 'imgs/CTAO-Loader.png' %}" alt="CTAO Logo" id="logo">
+{% endblock %}
+
+{% block extrastyle %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/custom_admin.css' %}">
+{% endblock %}
