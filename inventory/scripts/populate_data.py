@@ -241,17 +241,17 @@ def run():
 
     if not Telescope.objects.exists():
         for entry in Telescope_entries:
-            telescope = Telescope.objects.get_or_create(**entry)
+            telescope, success = Telescope.objects.get_or_create(**entry)
             for data in Telescope_Structures:
                 if len(Telescope.objects.all()) == 1 and data['name'] == "CC":
                     Telescope_structure.objects.get_or_create(
                         name=data['name'], 
-                        telescope=telescope.id
+                        telescope=telescope
                     )
                 else:
                     Telescope_structure.objects.get_or_create(
                         name=data['name'], 
-                        telescope=telescope.id
+                        telescope=telescope
                     )
 
     else:
