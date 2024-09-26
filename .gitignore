@@ -83,7 +83,7 @@ ENV/
 
 # Database stuff
 *.sqlite3
-migrations/
+#migrations/
 db.sqlite3
 
 # Django stuff:
