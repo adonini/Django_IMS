@@ -246,12 +246,12 @@ def run():
                 if len(Telescope.objects.all()) == 1 and data['name'] == "CC":
                     Telescope_structure.objects.get_or_create(
                         name=data['name'], 
-                        telescope=telescope
+                        telescope=telescope.id
                     )
                 else:
                     Telescope_structure.objects.get_or_create(
                         name=data['name'], 
-                        telescope=telescope
+                        telescope=telescope.id
                     )
 
     else:
