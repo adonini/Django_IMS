@@ -105,11 +105,11 @@ class Index(View):
                     item = Item.objects.get(pk=result[3])
                     logger.debug(result)
                     if item.code:
-                        latestUsed.append({'item': item.group.name+" - "+item.code, 'date': result[6], 'user': result[7], 'telescope': item.telescope})
+                        latestUsed.append({'itemName': item.group.name, 'itemCode':item.code, 'date': result[6], 'user': result[7], 'telescope': item.telescope})
                     elif item.serial_number:
-                        latestUsed.append({'item': item.group.name+" - "+item.serial_number, 'date': result[6], 'user': result[7], 'telescope': item.telescope})
+                        latestUsed.append({'itemName': item.group.name, 'itemSerial':item.serial_number, 'date': result[6], 'user': result[7], 'telescope': item.telescope})
                     else:
-                        latestUsed.append({'item': item.group.name+" - "+item.pk, 'date': result[6], 'user': result[7], 'telescope': item.telescope.telescope.name+" - "+item.telescope.name})
+                        latestUsed.append({'itemName': item.group.name, 'itemPk': item.pk, 'date': result[6], 'user': result[7], 'telescope': item.telescope.telescope.name+" - "+item.telescope.name})
         context['latest_used'] = latestUsed
         context['next_purchases'] = Purchase_group.objects.exclude(status=Purchase_status.objects.get(name='Received')).order_by('expected_delivery_date').filter(expected_delivery_date__gte=today)[:5]
         purchasesIds = list(Purchase_group.objects.exclude(status=Purchase_status.objects.get(name='Received')).order_by('expected_delivery_date').filter(expected_delivery_date__gte=today).values_list('id', flat=True)[:5])
@@ -432,7 +432,7 @@ class ManagePurchase(LoginRequiredMixin, View):
 class ManagePurchaseSearch(LoginRequiredMixin, View):
     def get(self, request, pk=None):
         context['page_title'] = "Manage Purchase Search"
-        context['items'] = Item.objects.filter(status__isnull=True)
+        context['items'] = Item.objects.filter(status=Item_status.objects.get(name='Unmanaged'))
         context['item_prices'] = list(Item.objects.exclude(price=None).values('id', 'price'))
         return render(request, 'inventory/manage_purchase_search.html', context)
     
