@@ -212,8 +212,8 @@ $(function() {
             let editPar = document.createElement('p')
             editPar.appendChild(document.createTextNode('Edit')) //Finish editing permissions by groups 
             editButton.appendChild(editPar)
-            editButton.removeEventListener('click', (e)=>{editPurchase(e, modalFooter)})
-            editButton.addEventListener('click', (e)=>{editPurchase(e, modalFooter)})
+            editButton.removeEventListener('click', (e)=>{editPurchase(e, modalFooter, id, headerDiv, finalUrl, editButton, receiveButton)})
+            editButton.addEventListener('click', (e)=>{editPurchase(e, modalFooter,id, headerDiv, finalUrl, editButton, receiveButton)})
             if(modalFooter.classList.contains('hidden')){
                 modalFooter.classList.remove('hidden')
             }
@@ -367,7 +367,7 @@ $(function() {
     top1End.appendChild(clearFilterButton)
 })
 
-const editPurchase = (e, modalFooter)=>{
+const editPurchase = (e, modalFooter, id, headerDiv, finalUrl, editButton, receiveButton)=>{
     $('#uni_modal').modal('hide')
     let div = document.createElement('div')
     div.classList.add("cardHeader")
@@ -498,26 +498,42 @@ const receivePurchase = (e, items, id, modalFooter, receiveButton, headerDiv, fi
                     })
                 }
             }
-            if (index == 0 ){
+            if (index == 0){
                 item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
             }else{
                 item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
             }
-            if(filteredItems.length != itemKeys.length && index != filteredItems.length-1){
+            if(index != filteredItems.length){
                 index += 1
             }
             if(filteredItems[index] != null){
                 nextId = filteredItems[index].id
                 nextItem = filteredItems.filter(element => element.id == nextId)[0]
-                if (item_data[nextId] == null){
-                    itemInput.value = nextItem.group__name+" - "+nextItem.id
-                    if(sharedZoneId != null){
-                        zoneSelect.selectedIndex = sharedZoneId
-                    }else{
-                        zoneSelect.selectedIndex = 0
+                itemInput.value = nextItem.group__name+" - "+nextItem.id
+                if(sharedZoneId != null){
+                    zoneSelect.selectedIndex = sharedZoneId
+                }else{
+                    zoneSelect.selectedIndex = 0
+                }
+                codeInput.value = nextItem.code
+                if(nextItem.code != null && nextItem.code != ''){
+                    if(!codeInput.disabled){
+                        codeInput.setAttribute('disabled', '')
                     }
-                    codeInput.value = nextItem.code
-                    serialInput.value = nextItem.serial_number
+                }else{
+                    if(codeInput.disabled){
+                        codeInput.removeAttribute('disabled')
+                    }
+                }
+                serialInput.value = nextItem.serial_number
+                if(nextItem.serial_number != null && nextItem.serial_number != ''){
+                    if(!serialInput.disabled){
+                        serialInput.setAttribute('disabled', '')
+                    }
+                }else{
+                    if(serialInput.disabled){
+                        serialInput.removeAttribute('disabled')
+                    }
                 }
             }
             let circlesDiv = document.querySelector('.circlesDiv')
@@ -525,6 +541,9 @@ const receivePurchase = (e, items, id, modalFooter, receiveButton, headerDiv, fi
                 if (child.classList.contains('circleSelected') && child.id != nextId){
                     child.classList.remove('circleSelected')
                 }else if(!child.classList.contains('circleSelected') && child.id == nextId){
+                    if(child.classList.contains('circleFilled')){
+                        child.classList.remove('circleFilled')
+                    }
                     child.classList.add('circleSelected')
                 }
                 if(item_data[child.id] != null){
@@ -557,9 +576,27 @@ const receivePurchase = (e, items, id, modalFooter, receiveButton, headerDiv, fi
                                             index = arrayIndex
                                             let currentItem = filteredItems.filter(element => element.id == parseInt(item_data[child.id].item))[0]
                                             itemInput.value = currentItem.group__name+" - "+currentItem.id
-                                            zoneSelect.selectedIndex = parseInt(item_data[child.id].zone)
+                                            zoneSelect.value = parseInt(item_data[child.id].zone)
                                             codeInput.value = item_data[child.id].code
+                                            if(item_data[child.id].code != null && item_data[child.id].code != ''){
+                                                if(!codeInput.disabled){
+                                                    codeInput.setAttribute('disabled', '')
+                                                }
+                                            }else{
+                                                if(codeInput.disabled){
+                                                    codeInput.removeAttribute('disabled')
+                                                }
+                                            }
                                             serialInput.value = item_data[child.id].serial_number
+                                            if(item_data[child.id].serial_number != null && item_data[child.id].serial_number != ''){
+                                                if(!serialInput.disabled){
+                                                    serialInput.setAttribute('disabled', '')
+                                                }
+                                            }else{
+                                                if(serialInput.disabled){
+                                                    serialInput.removeAttribute('disabled')
+                                                }
+                                            }
                                             circlesDiv.childNodes.forEach((element)=>{
                                                 element.classList.value = ''
                                                 element.classList.add('circle')
@@ -579,9 +616,27 @@ const receivePurchase = (e, items, id, modalFooter, receiveButton, headerDiv, fi
                             nextId = child.id
                             let currentItem = filteredItems.filter(element => element.id == parseInt(item_data[child.id].item))[0]
                             itemInput.value = currentItem.group__name+" - "+currentItem.id
-                            zoneSelect.selectedIndex = parseInt(item_data[child.id].zone)
+                            zoneSelect.value = parseInt(item_data[child.id].zone)
                             codeInput.value = item_data[child.id].code
+                            if(item_data[child.id].code != null && item_data[child.id].code != ''){
+                                if(!codeInput.disabled){
+                                    codeInput.setAttribute('disabled', '')
+                                }
+                            }else{
+                                if(codeInput.disabled){
+                                    codeInput.removeAttribute('disabled')
+                                }
+                            }
                             serialInput.value = item_data[child.id].serial_number
+                            if(item_data[child.id].serial_number != null && item_data[child.id].serial_number != ''){
+                                if(!serialInput.disabled){
+                                    serialInput.setAttribute('disabled', '')
+                                }
+                            }else{
+                                if(serialInput.disabled){
+                                    serialInput.removeAttribute('disabled')
+                                }
+                            }
                             circlesDiv.childNodes.forEach((element)=>{
                                 element.classList.value = ''
                                 element.classList.add('circle')
@@ -603,7 +658,7 @@ const receivePurchase = (e, items, id, modalFooter, receiveButton, headerDiv, fi
             setTimeout(()=>{message.setAttribute('hidden', '')}, 3000)
         }
         itemKeys = Object.keys(item_data)
-        if(filteredItems.length == itemKeys.length){
+        if(index == filteredItems.length){
             let emptyFields = false
             let emptyId = null
             itemKeys.forEach(key => {
@@ -612,8 +667,6 @@ const receivePurchase = (e, items, id, modalFooter, receiveButton, headerDiv, fi
                     if(emptyId == null){
                         emptyId = item_data[key].item
                     }
-                }else{
-
                 }
             })
             if(!emptyFields){
@@ -721,6 +774,10 @@ const handleAddItem = (e)=>{
             let tds = tr.children
             let generalIds = generalData.map(element => element.item)
             if(generalIds.includes(tds[1].id)){
+                if(tds[3].children[0] != null && tds[3].children[0].tagName == 'INPUT'){
+                    tds[3].children[0].value = generalData.filter(element=> element.item == tds[1].id)[0].price
+                    tds[3].children[0].setAttribute('disabled', '')
+                }
                 tr.classList.add('trSelected')
             }
             tr.addEventListener('click', handleTr)
@@ -764,10 +821,10 @@ const handleTr = (e)=>{
             if (priceInput != null){
                 if(priceInput.value != ""){
                     newRow = {'item': tds[1].id, 'price': priceInput.value}
-                    let index = generalData.findIndex(element => element.item === newRow.item && element.price === newRow.price)
+                    let index = newSelectedTrs.findIndex(element => element.item === newRow.item)
                     if (index != -1){
                         priceInput.removeAttribute('disabled')
-                        generalData.splice(index, 1)
+                        newSelectedTrs.splice(index, 1)
                         if(e.currentTarget.classList.contains('trSelected')){
                             e.currentTarget.classList.remove('trSelected')
                         }
@@ -781,7 +838,7 @@ const handleTr = (e)=>{
                 }
             }else{
                 newRow = {'item': tds[1].id, 'price': tds[3].innerHTML}
-                let index = newSelectedTrs.findIndex(element => element.item === newRow.item && element.price === newRow.price)
+                let index = newSelectedTrs.findIndex(element => element.item === newRow.item)
                 if (index != -1){
                     newSelectedTrs.splice(index, 1)
                     if(e.currentTarget.classList.contains('trSelected')){

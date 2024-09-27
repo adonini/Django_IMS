@@ -516,13 +516,13 @@ class DeletePurchase(LoginRequiredMixin, View):
                 purchase.item.price = None
                 purchase.item.save()
                 purchase.delete()
-                messages.success(request, 'Purchase has been deleted successfully!')
+                messages.success(request, 'Item has been deleted successfully from the purchase!')
                 resp['status'] = 'success'
             except Exception as err:
-                resp['msg'] = 'Purchase has failed to delete!'
+                resp['msg'] = 'Item has failed to delete!'
                 print(err)
         else:
-            resp['msg'] = 'Purchase has failed to delete'
+            resp['msg'] = 'Item has failed to delete'
         return HttpResponse(json.dumps(resp), content_type="application/json")
     
 class DeletePurchaseGroup(LoginRequiredMixin, View):
@@ -538,7 +538,7 @@ class DeletePurchaseGroup(LoginRequiredMixin, View):
                     purchase.item.save()
                     purchase.delete()
                 purchaseGroup.delete()
-                messages.success(request, 'Purchase Group has been deleted successfully!')
+                messages.success(request, 'Purchase has been deleted successfully!')
                 resp['status'] = 'success'
             except Exception as err:
                 resp['msg'] = 'Purchase has failed to delete!'
