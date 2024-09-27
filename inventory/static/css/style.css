@@ -321,7 +321,7 @@ circle {
     flex-direction: column;
     align-items: center;
 }
-.use, .broken, .stored, .purchased, .StockIn, .StockOut, .received, .returned{
+.use, .broken, .stored, .purchased, .StockIn, .StockOut, .received, .returned, .unmanaged{
     padding: 0.25rem;
     border-radius: 5rem;
     color: white;
@@ -337,6 +337,9 @@ circle {
 }
 .stored, .logout{
     background-color: #3D4357;
+}
+.unmanaged{
+    background-color: #bd7100;
 }
 .logout{
     color: #fff;
