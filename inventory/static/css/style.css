@@ -65,7 +65,7 @@ body{
     max-width: 100vw;
 }
 .table{
-    margin-top: 1rem;
+    margin-top: 1rem !important;
 }
 table, td, tr, th{
     border: none;
@@ -322,7 +322,7 @@ circle {
     align-items: center;
 }
 .use, .broken, .stored, .purchased, .StockIn, .StockOut, .received, .returned, .unmanaged{
-    padding: 0.25rem;
+    padding: 0.25rem 0.5rem;
     border-radius: 5rem;
     color: white;
     display: flex;
@@ -339,7 +339,7 @@ circle {
     background-color: #3D4357;
 }
 .unmanaged{
-    background-color: #bd7100;
+    background-color: #999999;
 }
 .logout{
     color: #fff;
@@ -498,6 +498,14 @@ label{
     padding: 1rem !important;
     height: auto !important;
 }
+.critical{
+    box-shadow: #E65C50 3px 3px 5px 1px;
+    border-color: #FF6F61 !important;
+}
+.low{
+    box-shadow: #ee8721 3px 3px 5px 1px;
+    border-color: #f57b00 !important;
+}
 .cardUses{
     width: 16rem !important;
     height: auto !important;
@@ -572,4 +580,13 @@ label{
 }
 .modal{
     --bs-modal-width: 650px;
+}
+.highlight{
+    display: block;
+    border: 1px solid #E65C50;
+    border-radius: 1rem;
+    padding: 0.25rem 0.75rem;
+    margin-top: 0.25rem;
+    color: white;
+    background-color: #E65C50;
 }

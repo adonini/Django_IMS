@@ -3,6 +3,14 @@
     <form action=" " id="item-form">
         {% csrf_token %}
         <input type="hidden" name="id" value="{{ item.id }}">
+        {% if not item.id %}
+            <div class="below">
+                <div>
+                    <label for="quantity">Specify the quantity of items to be created</label>
+                    <input type="number" id="quantity" name="quantity" class="form-control rounded-0 text-center" min="1" value="1">
+                </div>
+            </div>
+        {% endif %}
         <div class="inputs">
             <div class="inputsLeft">
                 <div class="form-group mb-3">
@@ -69,14 +77,6 @@
                     
                 </div>
             </div>
-            {% if not item.id %}
-                <div class="below">
-                    <div>
-                        <label for="quantity">Specify the quantity of items to be created</label>
-                        <input type="number" id="quantity" name="quantity" class="form-control rounded-0 text-center" min="1" value="1">
-                    </div>
-                </div>
-            {% endif %}
         </div>
     </form>
 </div>
@@ -143,9 +143,11 @@
         if(quantityInput.value != 1){
             if(!codeInput.parentNode.classList.contains('hidden')){
                 codeInput.parentNode.classList.add('hidden')
+                codeInput.value = ''
             }
             if(!serialInput.parentNode.classList.contains('hidden')){
                 serialInput.parentNode.classList.add('hidden')
+                serialInput.value = ''
             }
             spacers.forEach((spacer)=>{
                 if(spacer.classList.contains('hidden')){

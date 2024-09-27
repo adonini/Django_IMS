@@ -26,18 +26,18 @@
 							<div class="d-flex w-100 dashWrapper flex-wrap gap-3">
 								{% for element in critical_stock %}
 									<div class="card critical">
-										<div class="cardHeader">
+										<div class="cardHeader border-bottom mb-1">
 											<h5 class="text-center w-100">{{element.name}}</h5>
 										</div>
 										<div class="cardBody">
 											<div class="upper">
 												<div class="top">
-													<p>Minumim Stock Limit</p>
-													<strong>{{element.minimum_stock}}</strong>
+													<strong>Minumim Stock Limit</strong>
+													<p>{{element.minimum_stock}}</p>
 												</div>
 												<div class="bottom">
-													<p>Actual stock</p>
-													<strong>{{element.group_stock}}</strong>
+													<strong>Actual stock</strong>
+													<p>{{element.group_stock}}</p>
 												</div>
 											</div>
 										</div>
@@ -50,18 +50,18 @@
 							<div class="d-flex w-100 dashWrapper">
 								{% for element in low_stock %}
 									<div class="card low">
-										<div class="cardHeader">
+										<div class="cardHeader border-bottom mb-1">
 											<h5 class="text-center w-100">{{element.name}}</h5>
 										</div>
 										<div class="cardBody">
 											<div class="upper">
 												<div class="top">
-													<p>Minumim Stock Limit</p>
-													<strong>{{element.minimum_stock}}</strong>
+													<strong>Minumim Stock Limit</strong>
+													<p>{{element.minimum_stock}}</p>
 												</div>
 												<div class="bottom">
-													<p>Actual stock</p>
-													<strong>{{element.group_stock}}</strong>
+													<strong>Actual stock</strong>
+													<p>{{element.group_stock}}</p>
 												</div>
 											</div>
 										</div>
@@ -74,16 +74,18 @@
 			{% endif %}
 			<div class="right">
 				<div class="d-flex flex-column latest border-bottom pb-3 h-100">
-					<h3 class="text-center">Latest 5 items</h3>
-					<h5 class="mt-2 mb-0 w-full title text-center p-1 mb-3">Used</h5>
-					<div>
+					<h3 class="text-center">Latest 5 used items</h3>
+					<div class="mt-2">
 						<div class="w-100 d-flex justify-content-evenly flex-wrap gap-3 mb-1">
 							{% for element in latest_used %}
 								<div class="card cardUses">
-									<div class="cardBody d-flex flex-column justify-content-evenly h-100 w-100">
-										<div class="w-100 text-center mb-3">
-											<strong>{{element.item}}</strong>
+									<div class="cardHeader border-bottom mb-2">
+										<div class="w-100 text-center mb-1">
+											<h5 class="mb-0">{{element.itemName}}</h5>
+											<strong>{% if element.itemCode %}{{element.itemCode}}{% elif element.itemSerial %}{{element.itemSerial}}{% else %}{{element.itemPk}}{% endif %}</strong>
 										</div>
+									</div>
+									<div class="cardBody d-flex flex-column justify-content-evenly h-100 w-100">
 										<div class="d-flex flex-column align-items-center justify-content-end mb-1">
 											<strong>Instalation Date</strong>
 											<p>{{element.date|date:"d/m/Y"}}</p>
@@ -114,17 +116,17 @@
 			<div class="d-flex justify-content-evenly flex-wrap gap-4 mb-3">
 				{% for purchase in next_purchases %}
 					<div class="card cardPurchases">
-						<div class="cardHeader">
-							<h5 class="text-center w-100">{{purchase.order_number}}</h5>
+						<div class="cardHeader border-bottom mb-2">
+							<h5 class="text-center w-100"># {{purchase.order_number}}</h5>
 						</div>
 						<div class="cardBody">
 							<div class="d-flex flex-column align-items-center mb-1">
 								<strong class="text-center mb-0">Total items</strong>
-								<p>{{purchase.items_purchased}}</p>
+								<p class="mb-0">{{purchase.items_purchased}}</p>
 							</div>
 							<div class="d-flex flex-column align-items-center mb-1">
 								<strong class="text-center mb-0">Purchase date</strong>
-								<p>{{purchase.created_at|date:"d/m/Y"}}</p>
+								<p class="mb-0">{{purchase.created_at|date:"d/m/Y"}}</p>
 							</div>
 							<div class="d-flex flex-column align-items-center mb-1">
 								<strong class="text-center mb-0">Expected delivery date</strong>
