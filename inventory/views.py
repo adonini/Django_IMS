@@ -512,7 +512,7 @@ class DeletePurchase(LoginRequiredMixin, View):
         if request.method == 'POST':
             try:
                 purchase = Purchase.objects.get(id=request.POST['id'])
-                purchase.item.status = None
+                purchase.item.status = Item_status.objects.get(name='Unmanaged')
                 purchase.item.price = None
                 purchase.item.save()
                 purchase.delete()
@@ -533,7 +533,7 @@ class DeletePurchaseGroup(LoginRequiredMixin, View):
                 purchaseGroup = Purchase_group.objects.get(id=request.POST['id'])
                 purchases = Purchase.objects.filter(purchase_group = purchaseGroup)
                 for purchase in purchases:
-                    purchase.item.status = None
+                    purchase.item.status = Item_status.objects.get(name='Unmanaged')
                     purchase.item.price = None
                     purchase.item.save()
                     purchase.delete()

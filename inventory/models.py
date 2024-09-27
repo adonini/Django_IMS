@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import validate_comma_separated_integer_list
 from django.dispatch import receiver
+from django.core.exceptions import ObjectDoesNotExist
 
 class Category(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
@@ -93,6 +94,12 @@ class Item_status(models.Model):
     class Meta:
         db_table = 'items_statuses'
 
+def get_unmanaged_status():
+    try:
+        return Item_status.objects.get(name='Unmanaged')
+    except ObjectDoesNotExist:
+        return None
+
 class Item(models.Model):
     group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True)
     code = models.CharField(max_length=150, blank=True, null=True)
@@ -102,7 +109,7 @@ class Item(models.Model):
     price = models.FloatField(blank=True, null=True)
     expiration_date = models.DateField(blank=True, null=True)
     datasheet_url = models.CharField(max_length=100, blank=True, null=True)
-    status = models.ForeignKey(Item_status, on_delete=models.SET_NULL, null=True)
+    status = models.ForeignKey(Item_status, on_delete=models.SET_NULL, null=True, default=get_unmanaged_status)
     telescope = models.ForeignKey(Telescope_structure, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

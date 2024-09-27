@@ -1,7 +1,7 @@
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
 from ..models import Stock_Type, Item_status, Purchase_status, Location, Zone, Telescope, Unit, Payment_sources, Category, Sub_category, Group, Telescope_structure
-from django.contrib.auth.models import Group as G, Permission
+from django.contrib.auth.models import Group as G, Permission, User
 
 def run():
 
@@ -9,7 +9,7 @@ def run():
         {'name': 'Purchased'},
         {'name': 'Stored'},
         {'name': 'Broken'},
-        {'name': 'Installed'},
+        {'name': 'Unmanaged'},
         {'name': 'In use'},
     ]
     PurchaseStatuses_entries = [
@@ -284,6 +284,11 @@ def run():
     if not G.objects.exists():
         for index, entry in enumerate(admin_groups_entries):
             group, success = G.objects.get_or_create(**entry)
+            if entry['name'] == 'admin':
+                users = User.objects.filter(is_superuser=True)
+                for user in users:
+                    user.groups.add(group)
+                    user.save()
             if index == 0:
                 all_permission = Permission.objects.all()
                 group.permissions.set(all_permission)
