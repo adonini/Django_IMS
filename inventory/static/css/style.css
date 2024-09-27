@@ -409,7 +409,7 @@ h4{
     height: 0.5rem;
 }
 .circleSelected{
-    opacity: 1;
+    opacity: 1 !important;
 }
 .circleFilled{
     opacity: 0.5;
