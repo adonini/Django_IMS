@@ -4,6 +4,7 @@ from django.core.validators import validate_comma_separated_integer_list
 from django.dispatch import receiver
 from django.core.exceptions import ObjectDoesNotExist
 
+
 class Category(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
     PBS_code = models.CharField(max_length=25, blank=True, null=True)
@@ -13,6 +14,12 @@ class Category(models.Model):
 
     class Meta:
         db_table = 'categories'
+        verbose_name = 'Category'
+        verbose_name_plural = 'Categories'
+
+    def __str__(self):
+        return self.name
+
 
 class Sub_category(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
@@ -24,6 +31,12 @@ class Sub_category(models.Model):
 
     class Meta:
         db_table = 'sub-categories'
+        verbose_name = 'Sub-category'
+        verbose_name_plural = 'Sub-categories'
+
+    def __str__(self):
+        return self.name
+
 
 class Unit(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
@@ -33,6 +46,10 @@ class Unit(models.Model):
 
     class Meta:
         db_table = 'units'
+
+    def __str__(self):
+        return self.name
+
 
 class Group(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
@@ -48,10 +65,14 @@ class Group(models.Model):
     class Meta:
         db_table = 'groups'
 
+    def __str__(self):
+        return self.name
+
     def group_stock(self):
-        stock_items = Stock.objects.filter(item__group = self.pk)
+        stock_items = Stock.objects.filter(item__group=self.pk)
         current_stock = len(stock_items)
         return current_stock
+
 
 class Producer(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
@@ -67,6 +88,10 @@ class Producer(models.Model):
     class Meta:
         db_table = 'producers'
 
+    def __str__(self):
+        return self.name
+
+
 class Telescope(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
     description = models.TextField(default='-', null=True)
@@ -77,6 +102,10 @@ class Telescope(models.Model):
     class Meta:
         db_table = 'telescopes'
 
+    def __str__(self):
+        return self.name
+
+
 class Telescope_structure(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
     telescope = models.ForeignKey(Telescope, on_delete=models.CASCADE, null=True)
@@ -86,6 +115,10 @@ class Telescope_structure(models.Model):
     class Meta:
         db_table = 'telescope_structures'
 
+    def __str__(self):
+        return self.name
+
+
 class Item_status(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -93,12 +126,19 @@ class Item_status(models.Model):
 
     class Meta:
         db_table = 'items_statuses'
+        verbose_name = 'Item Status'
+        verbose_name_plural = 'Item Statuses'
+
+    def __str__(self):
+        return self.name
+
 
 def get_unmanaged_status():
     try:
         return Item_status.objects.get(name='Unmanaged')
     except ObjectDoesNotExist:
         return None
+
 
 class Item(models.Model):
     group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True)
@@ -116,7 +156,11 @@ class Item(models.Model):
 
     class Meta:
         db_table = 'items'
-    
+
+    def __str__(self):
+        return f'{self.group} - {self.model} ({self.serial_number})'
+
+
 class Stock_Type(models.Model):
     name = models.CharField(max_length=200)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -124,9 +168,12 @@ class Stock_Type(models.Model):
 
     class Meta:
         db_table = 'stock_types'
+        verbose_name = 'Stock Type'
+        verbose_name_plural = 'Stock Types'
 
     def __str__(self):
         return self.name
+
 
 class Location(models.Model):
     name = models.CharField(max_length=200)
@@ -136,6 +183,10 @@ class Location(models.Model):
     class Meta:
         db_table = 'locations'
 
+    def __str__(self):
+        return self.name
+
+
 class Zone(models.Model):
     name = models.CharField(max_length=200)
     location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True)
@@ -143,23 +194,32 @@ class Zone(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'zones'    
-    
+        db_table = 'zones'
+
+    def __str__(self):
+        return self.name
+
+
 class Stock(models.Model):
-    zone= models.ForeignKey(Zone, on_delete=models.SET_NULL, null=True)
+    zone = models.ForeignKey(Zone, on_delete=models.SET_NULL, null=True)
     stock_type = models.ForeignKey(Stock_Type, on_delete=models.SET_NULL, null=True)
     item = models.ForeignKey(Item, on_delete=models.CASCADE, blank=True, null=True)
     quantity = models.IntegerField(default=1, null=True)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
     old = models.BooleanField(default=False, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)  
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'stocks'
-    
+        verbose_name = 'Stock'
+        verbose_name_plural = 'Stock'
+
+    def __str__(self):
+        return f'{self.item} - #{self.quantity}'
+
     def count_inventory(self):
-        stocks = Stock.objects.filter(item__group__id=self.item.group.id, zone = self.zone)
+        stocks = Stock.objects.filter(item__group__id=self.item.group.id, zone=self.zone)
         stockIn = 0
         stockOut = 0
         for elements in stocks:
@@ -170,6 +230,7 @@ class Stock(models.Model):
         available = stockIn - stockOut
         return available
 
+
 class Payment_sources(models.Model):
     name = models.CharField(max_length=200)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -177,6 +238,12 @@ class Payment_sources(models.Model):
 
     class Meta:
         db_table = 'payment_sources'
+        verbose_name = 'Payment Source'
+        verbose_name_plural = 'Payment Sources'
+
+    def __str__(self):
+        return self.name
+
 
 class Purchase_status(models.Model):
     name = models.CharField(max_length=200)
@@ -185,6 +252,11 @@ class Purchase_status(models.Model):
 
     class Meta:
         db_table = 'purchase_statuses'
+        verbose_name = 'Purchase Status'
+        verbose_name_plural = 'Purchase Statuses'
+
+    def __str__(self):
+        return self.name
 
 
 class Supplier(models.Model):
@@ -200,6 +272,10 @@ class Supplier(models.Model):
 
     class Meta:
         db_table = 'suppliers'
+
+    def __str__(self):
+        return self.name
+
 
 class Purchase_group(models.Model):
     order_number = models.CharField(max_length=100, blank=True, null=True)
@@ -219,6 +295,8 @@ class Purchase_group(models.Model):
 
     class Meta:
         db_table = 'purchase_groups'
+        verbose_name = 'Purchase Group'
+        verbose_name_plural = 'Purchase Groups'
 
     def calculate_amount(self):
         purchases = Purchase.objects.filter(purchase_group_id=self.pk)
@@ -226,10 +304,14 @@ class Purchase_group(models.Model):
         for purchase in purchases:
             amount += purchase.price_per_item
         return amount
-    
+
     def items_purchased(self):
         purchases = Purchase.objects.filter(purchase_group_id=self.pk)
         return len(purchases)
+
+    def __str__(self):
+        return f'# {self.order_number if self.order_number else "Unknown Order Number"}'
+
 
 class Purchase(models.Model):
     price_per_item = models.FloatField(blank=True, null=True)
@@ -241,6 +323,9 @@ class Purchase(models.Model):
 
     class Meta:
         db_table = 'purchases'
+
+    def __str__(self):
+        return f'Purchase {self.purchase_group} - {self.item} - {self.quantity} units'
 
 # @receiver(models.signals.post_save, sender=Invoice_Item)
 # def stock_update(sender, instance, **kwargs):
