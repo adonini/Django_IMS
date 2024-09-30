@@ -41,7 +41,7 @@
                 <td class="align-canter text-center light-text">{{purchase.price_per_item}}</td>
                 {% if user|has_group:"admin" or user|has_group:"technician" %}
                     {% if purchase_group.status.name|lower != 'received' %}
-                        <td class="align-canter text-center light-text"><button class="btn highlight-color delete_purchase_item" data-id="{{ purchase.pk }}"><i class="fa fa-times"></i> Delete</button></td>
+                        <td class="align-canter text-center light-text"><button class="btn highlight-color delete_purchase_item" data-id="{{ purchase.pk }}" title="Delete this item"><i class="fa fa-times"></i> Delete</button></td>
                     {% endif %}
                 {% endif %}
             </tr>

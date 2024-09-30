@@ -28,7 +28,7 @@
                     <th class="text-center dark-text">Total Price</th>
                     <th class="text-center dark-text">Shipping Cost</th>
                     <th class="text-center dark-text">Status</th>
-                    <th class="text-center dark-text">Details</th>
+                    <th class="text-center dark-text">{% if user|has_group:"admin" or user|has_group:"technician" %} Actions {% else %} Details {% endif %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -36,16 +36,30 @@
                 <tr>
                     <td class="align-canter text-center light-text">{{ forloop.counter }}</td>
                     <td class="align-canter text-center light-text" >{{purchase.order_number}}</td>
-                    <td class="align-canter text-center light-text" >{{purchase.order_date | date:"d/m/Y"}}</td>
+                    <td class="align-canter text-center light-text" >{% if purchase.order_date %}{{purchase.order_date | date:"d/m/Y"}}{% else %} - {% endif %}</td>
                     <td class="align-canter text-center light-text" >{{purchase.expected_delivery_date | date:"d/m/Y"}}</td>
                     <td class="align-canter text-center light-text" >{{purchase.calculate_amount}} </td>
-                    <td class="align-canter text-center light-text" >{{purchase.shipping_cost}}</td>
+                    <td class="align-canter text-center light-text" >{% if purchase.shipping_cost %}{{purchase.shipping_cost}}{% else %} - {% endif %}</td>
                     <td class="align-canter text-center light-text" ><div class="{{purchase.status.name|lower}}">{{purchase.status.name}}</div></td>
                     <td class="align-center text-center light-text">
-                        <button type="button" class="btn btn-bg-dark btn-sm purchase-data" href="javascript:void(0)" data-id="{{ purchase.pk }}" data-status="{{purchase.status.name|lower}}" title="Info">
-                            <i class="fa fa-info-circle"></i>
-                            INFO
-                        </button>
+                        <div class="d-flex justify-content-center">
+                            {% if user|has_group:"technician" or user|has_group:"admin" %}
+                                <button class="btn btn-bg-dark modalButton edit receivePurchase {% if not user|has_group:'admin' %} widerIcon {% endif %}" data-id="49" title="Receive purchase"><i class="fa fa-boxes-stacked"></i><i class="fa fa-arrow-right"></i></button>
+                                </div>
+                                <div class="mt-1">
+                                    <button class="btn btn-sm selected" id="{{purchase.pk}}" title="Edit purchase">
+                                        <i class="fa fa-edit"></i>
+                                    </button>
+                            {% endif %}
+                            <button type="button" class="btn btn-bg-dark btn-sm purchase-data {% if not user|has_group:'technician' and not user|has_group:'admin' %} widerIcon {% endif %}" href="javascript:void(0)" data-id="{{ purchase.pk }}" data-status="{{purchase.status.name|lower}}" title="Purchase information">
+                                <i class="fa fa-info-circle"></i>
+                            </button>
+                            {% if user|has_group:"admin" %}
+                                <button class="btn highlight-color btn-sm" title="Delete the whole purchase" id="{{purchase.pk}}">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -191,8 +205,18 @@ $(function() {
         let receiveButton = null
         headerDiv.classList.add("cardHeader")
         let title = document.createElement('h4')
-        title.classList.add('dark-text')
+        title.classList.add('dark-text', 'me-2')
         title.innerHTML = "Purchase Information"
+        let titleDiv = document.createElement('div')
+        titleDiv.classList.add('d-flex')
+        let deleteButton = document.createElement('button')
+        deleteButton.classList.add('btn', 'highlight-color', 'btn-sm')
+        let deleteIcon = document.createElement('i')
+        deleteIcon.classList.add('fa', 'fa-trash')
+        deleteButton.appendChild(deleteIcon)
+        deleteButton.title = "Delete the whole purchase"
+        titleDiv.appendChild(title)
+        titleDiv.appendChild(deleteButton)
         let anchor = document.createElement('div')
         anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
         anchor.addEventListener('click', (e)=>{
@@ -201,7 +225,7 @@ $(function() {
         let icon = document.createElement('i')
         icon.classList.add('fa', 'fa-times')
         anchor.appendChild(icon)
-        headerDiv.appendChild(title)
+        headerDiv.appendChild(titleDiv)
         headerDiv.appendChild(anchor)
         uni_modal(headerDiv, finalUrl, 'modal-md')
         {% if user|has_group:"admin" or user|has_group:"technician" %}

@@ -21,10 +21,11 @@
                         <th class="text-center dark-text">#</th>
                         <th class="text-center dark-text">Group</th>
                         <th class="text-center dark-text">Code</th>
+                        <th class="text-center dark-text">Serial Number</th>
                         <th class="text-center dark-text">Producer</th>
                         <th class="text-center dark-text">Location</th>
                         <th class="text-center dark-text">Zone</th>
-                        <th class="text-center dark-text">Details</th>
+                        <th class="text-center dark-text">{% if user|has_group:"admin" or user|has_group:"technician" %} Actions {% else %} Details {% endif %}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -32,19 +33,34 @@
                     <tr>
                         <td class="align-canter text-center light-text">{{ forloop.counter }}</td>
                         <td class="align-canter text-center light-text">{% if stock.item.group is not None %}{{ stock.item.group.name }}{% else %}{{stock.item.group}}{% endif %}</td>
-                        <td class="align-canter text-center light-text" >{% if stock.item.code is not None and stock.item.code != '' %}{{stock.item.code}}{% elif stock.item.serial_number is not None and stock.item.serial_number != '' %}{{stock.item.serial_number}}{% else %}{{stock.item.id}}{% endif %}</td>
-                        <td class="align-canter text-center light-text">{% if stock.item.producer is not None %}{{ stock.item.producer.name }}{% else %}{{stock.item.producer}}{% endif %}</td>
-                        <td class="align-canter text-center light-text">{% if stock.zone.location is not None %}{{ stock.zone.location.name }}{% else %}{{stock.zone.location}}{% endif %}</td>
-                        <td class="align-canter text-center light-text" id="{{stock.zone.id}}">{% if stock.zone is not None %}{{ stock.zone.name }}{% else %}{{stock.zone}}{% endif %}</td>
-                        <td class="align-center text-center light-text">
-                            <button type="button" class="btn selected rounded-xl btn-sm useBtn" data-id="{{ stock.pk }}">
-                                <i class="fa fa-box-open"></i> 
-                                USE
-                            </button>
-                            <button type="button" class="btn btn-bg-dark btn-sm stock-data" data-id="{{ stock.pk }}" data-old="{{stock.old}}" title="Info">
-                                <i class="fa fa-info-circle"></i>
-                                INFO
-                            </button>
+                        <td class="align-canter text-center light-text" >{% if stock.item.code is not None and stock.item.code != '' %}{{stock.item.code}}{% else %}{{stock.item.id}}{% endif %}</td>
+                        <td class="align-canter text-center light-text" >{% if stock.item.serial_number is not None and stock.item.serial_number != '' %}{{stock.item.serial_number}}{% else %} - {% endif %}</td>
+                        <td class="align-canter text-center light-text">{% if stock.item.producer is not None %}{{ stock.item.producer.name }}{% else %} - {% endif %}</td>
+                        <td class="align-canter text-center light-text">{% if stock.zone.location is not None %}{{ stock.zone.location.name }}{% else %} - {% endif %}</td>
+                        <td class="align-canter text-center light-text" id="{{stock.zone.id}}">{% if stock.zone is not None %}{{ stock.zone.name }}{% else %} - {% endif %}</td>
+                        <td class="align-center text-center light-text d-flex flex-wrap justify-content-around">
+                            <div>
+                                {% if user|has_group:"technician" or user|has_group:"admin" %}
+                                    <button type="button" class="btn selected rounded-xl btn-sm useBtn" data-id="{{ stock.pk }}" title="Use the item">
+                                        <i class="fa fa-box-open"></i> 
+                                    </button>
+                                {% endif %}
+                                <button type="button" class="btn btn-bg-dark btn-sm stock-data {% if not user|has_group:'technician' and not user|has_group:'admin' %} widerIcon {% endif %}" data-id="{{ stock.pk }}" data-old="{{stock.old}}" title="Stock information">
+                                    <i class="fa fa-info-circle"></i>
+                                </button>
+                            {% if user|has_group:"technician" or user|has_group:"admin" %}
+                                </div>
+                                <div class="mt-1">
+                                    <button class="btn btn-sm selected {% if not user|has_group:'admin' %} widerIcon {% endif %}" title="Move the stock">
+                                        <i class="fa fa-dolly"></i>
+                                    </button>
+                                    {% if user|has_group:"admin" %}
+                                        <button class="btn btn-sm highlight-color delBtn" id="{{stock.pk}}" title="Delete the stock">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    {% endif %}
+                            {% endif%}
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -375,29 +391,29 @@
             buttons: [{
                 extend: 'copy',
                 exportOptions: {
-                    columns: ':not(:eq(6))'
+                    columns: ':not(:eq(7))'
                 }
             },
             {
                 extend: 'csv',
                 exportOptions: {
-                    columns: ':not(:eq(6))'
+                    columns: ':not(:eq(7))'
                 }
             },
             {
                 extend: 'excel',
                 exportOptions: {
-                    columns: ':not(:eq(6))'
+                    columns: ':not(:eq(7))'
                 }
             },
             {
                 extend: 'print',
                 exportOptions: {
-                    columns: ':not(:eq(6))'
+                    columns: ':not(:eq(7))'
                 }
             }],
             columnDefs: [
-                {orderable: false, targets: [0,3,4,5,6]},
+                {orderable: false, targets: [0,4,6,7]},
                 {targets: [4,6], 
                     render: function(data, type, row) {
                         return '<div class="text-truncate" style="max-width: 100px;">' + data + '</div>';
