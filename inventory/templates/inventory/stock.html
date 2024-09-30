@@ -10,7 +10,6 @@
             {% if user|has_group:"admin" or user|has_group:"technician" %}
                 <div class="tools">
                     <button type="button" class="btn btn-bg-dark rounded-xl btn-sm" id='add_new'><i class="fa fa-plus"></i> Add Stock</button>
-                    <button type="button" class="btn selected rounded-xl btn-sm" id='use'><i class="fa fa-box-open"></i> Use Item</button>
                 </div>
             {% endif %}
         </div>
@@ -38,7 +37,12 @@
                         <td class="align-canter text-center light-text">{% if stock.zone.location is not None %}{{ stock.zone.location.name }}{% else %}{{stock.zone.location}}{% endif %}</td>
                         <td class="align-canter text-center light-text" id="{{stock.zone.id}}">{% if stock.zone is not None %}{{ stock.zone.name }}{% else %}{{stock.zone}}{% endif %}</td>
                         <td class="align-center text-center light-text">
-                            <button type="button" class="btn btn-bg-dark btn-sm stock-data" href="javascript:void(0)" data-id="{{ stock.pk }}" data-old="{{stock.old}}" title="Info">
+                            <button type="button" class="btn selected rounded-xl btn-sm useBtn" data-id="{{ stock.pk }}">
+                                <i class="fa fa-box-open"></i> 
+                                USE
+                            </button>
+                            <button type="button" class="btn btn-bg-dark btn-sm stock-data" data-id="{{ stock.pk }}" data-old="{{stock.old}}" title="Info">
+                                <i class="fa fa-info-circle"></i>
                                 INFO
                             </button>
                         </td>
@@ -100,7 +104,8 @@
             })
             modalFooter.appendChild(createButton)
         })
-        $('#use').click(function() {
+        $(document).on('click', '.useBtn', function(e) {
+            let id = e.target.dataset.id
             let headerDiv = document.createElement('div')
             headerDiv.classList.add("cardHeader")
             let title = document.createElement('h4')
@@ -122,7 +127,9 @@
             anchor.appendChild(icon)
             headerDiv.appendChild(titleDiv)
             headerDiv.appendChild(anchor)
-            uni_modal(headerDiv, '{% url "manage-stock" "use" %}', 'modal-md')
+            let baseUrl = '{% url "manage-stock-status-pk" "use" 0 %}'
+            let finalUrl = baseUrl.replace('0', id);
+            uni_modal(headerDiv, finalUrl, 'modal-md')
             let modalFooter = document.querySelector('.modal-footer')
             modalFooter.innerHTML = ''
             if(modalFooter.classList.contains('hidden')){
@@ -146,7 +153,6 @@
             })
             modalFooter.appendChild(createButton)
         })
-        $(document).off('click')
         $(document).on('click', '.stock-data', function(e) {
             let id = e.target.dataset.id
             let old = e.target.dataset.old

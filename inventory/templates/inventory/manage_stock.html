@@ -9,8 +9,8 @@
         {% endif %}
 
             <div class="form-group mb-3 ">
-                <label for="item" class="control-label">Items</label>
                 {% if stock.item is None %}
+                    <label for="item" class="control-label">Items</label>
                     <select class="form-control rounded-0" name="item" id="item">
                         {% if items|length > 1 %}
                             <option value="All" {% if not stock.zone %} selected {% endif %} disabled>-----</option>
@@ -20,7 +20,8 @@
                                 {% endfor %}
                     </select>
                 {% else %}
-                    <input type="text" id="item" value="{{stock.item.name}}" disabled>
+                    <label for="item" class="control-label">Item</label>
+                    <input type="text" id="item" value="{{stock.item.group.name}} - {{stock.item.pk}}" disabled>
                 {% endif %}
             </div>
         
@@ -46,7 +47,7 @@
                 <input type="text" class="form-control rounded-0" id="serial_number" pattern=".{4,}" title="Minimum 4 characters" name="serial_number" value="{{ item.serial_number }}" required>
             </div>
         </div>
-        <div class="instalation hidden">
+        <div class="instalation {% if operation == 1 %} hidden {% endif %}">
             <label for="telescope">Instalation place</label>
             <select class="form-control rounded-0" name="telescope" id="telescope">
                 <option value="0" selected disabled>-----</option>
@@ -67,142 +68,93 @@
     </form>
 </div> {% endcomment %}
 <script>
-    if (typeof stock_info === 'undefined'){
-        let stock_info = {{ stock_data | safe }}
-        let operation = {{operation}}
+    let operation = {{operation}}
+    {% if unStockedItems %}
         let unStockedItems = {{ unStockedItems | safe }}
-        $(function() {
-            $('#stock-form').submit(function(e) {
-                e.preventDefault();
+    {% endif %}
+    $(function() {
+        $('#stock-form').submit(function(e) {
+            e.preventDefault();
+            let codeInput = document.querySelector('#code')
+            let serialInput = document.querySelector('#serial_number')
+            if((operation == 1 && (codeInput.value.length > 0 || serialInput.value.length > 0)) || operation == 2){
+                codeInput.removeAttribute('required')
+                serialInput.removeAttribute('required')
+            }
+            var _this = $(this)
+            $('.err-msg').remove();
+            var el = $('<div>')
+            el.addClass("alert alert-danger err-msg")
+            el.hide()
+            if (_this[0].checkValidity() == false) {
+                _this[0].reportValidity();
+                return false;
+            }
+            start_loader();
+            $.ajax({
+                url: "{% url 'add-stock' %}",
+                data: new FormData($(this)[0]),
+                cache: false,
+                contentType: false,
+                processData: false,
+                method: 'POST',
+                type: 'POST',
+                dataType: 'json',
+                error: err => {
+                    console.log(err)
+                    alert("An error occured ", 'error');
+                    end_loader();
+                },
+                success: function(resp) {
+                    if (typeof resp == 'object' && resp.status == 'success') {
+                        el.removeClass("alert alert-success err-msg ")
+                        location.reload()
+                    } else if (resp.status == 'failed' && !!resp.msg) {
+                        el.html(resp.msg)
+                    } else {
+                        el.text("An error occured ", 'error');
+                        end_loader();
+                        console.err(resp)
+                    }
+                    _this.prepend(el)
+                    el.show('slow')
+                    $("html, body, .modal ").scrollTop(0);
+                    end_loader()
+                }
+            })
+        })
+        if(operation == 1){
+            $('#item').on('change', function(e){
                 let codeInput = document.querySelector('#code')
                 let serialInput = document.querySelector('#serial_number')
-                if((operation == 1 && (codeInput.value.length > 0 || serialInput.value.length > 0)) || operation == 2){
-                    codeInput.removeAttribute('required')
-                    serialInput.removeAttribute('required')
+                let foundItem = unStockedItems.filter(item => item.id == e.target.value)[0]
+                console.log(unStockedItems)
+                if(foundItem.code != null && foundItem.code != ""){
+                    codeInput.value = foundItem.code
+                }else{
+                    codeInput.value = ""
                 }
-                var _this = $(this)
-                $('.err-msg').remove();
-                var el = $('<div>')
-                el.addClass("alert alert-danger err-msg")
-                el.hide()
-                if (_this[0].checkValidity() == false) {
-                    _this[0].reportValidity();
-                    return false;
+                if(foundItem.serial_number != null && foundItem.serial_number != ""){
+                    serialInput.value = foundItem.serial_number
+                }else{
+                    serialInput.value = ""
                 }
-                start_loader();
-                $.ajax({
-                    url: "{% url 'add-stock' %}",
-                    data: new FormData($(this)[0]),
-                    cache: false,
-                    contentType: false,
-                    processData: false,
-                    method: 'POST',
-                    type: 'POST',
-                    dataType: 'json',
-                    error: err => {
-                        console.log(err)
-                        alert("An error occured ", 'error');
-                        end_loader();
-                    },
-                    success: function(resp) {
-                        if (typeof resp == 'object' && resp.status == 'success') {
-                            el.removeClass("alert alert-success err-msg ")
-                            location.reload()
-                        } else if (resp.status == 'failed' && !!resp.msg) {
-                            el.html(resp.msg)
-                        } else {
-                            el.text("An error occured ", 'error');
-                            end_loader();
-                            console.err(resp)
-                        }
-                        _this.prepend(el)
-                        el.show('slow')
-                        $("html, body, .modal ").scrollTop(0);
-                        end_loader()
-                    }
-                })
             })
-            if(operation == 2){
-                let message = document.querySelector('.guide-message')
-                message.appendChild(document.createTextNode('Please select an item.'))
-                message.classList.add('mb-0')
-                let itemSelect = document.querySelector('#item')
-                let filteredEntries = stock_info.map(entry => entry.item);
-                Array.from(itemSelect.options).forEach(option => {
-                    if (filteredEntries.includes(parseInt(option.value))) {
-                                option.style.display = 'block'; 
-                            } else {
-                                option.style.display = 'none';  
-                            }
-                })
-                $('#item').on('change', function(e){
-                    let zoneSelect = document.querySelector('#zone')
-                    let table = $('#stock-list').DataTable();
-                    if(e.target.value != 'All'){
-                        let filteredZones = stock_info.filter(entry => entry.item == e.target.value).map(entry => entry.zone);
-                        let instalationDiv = document.querySelector('.instalation')
-                        let item_value  = e.target.options[e.target.selectedIndex].text.split(' - ')
-                        if(zoneSelect.parentNode.classList.contains('hidden')){
-                            zoneSelect.parentNode.classList.remove('hidden')
-                            if(instalationDiv.classList.contains('hidden')){
-                                instalationDiv.classList.remove('hidden')
-                            }
-                        }
-                        Array.from(zoneSelect.options).forEach(option => {
-                            if (filteredZones.includes(parseInt(option.value))) {
-                                let optionIndex = Array.from(zoneSelect.options).findIndex(opt => opt === option);
-                                zoneSelect.selectedIndex = optionIndex
-                                option.style.display = 'block'; 
-                            } else {
-                                option.style.display = 'none';  
-                            }
-                        })
-                        message.innerHTML = ''
-                        message.appendChild(document.createTextNode('You have changed the item, if this item is going to be installed please specify a telescope.'))
-                    }else{
-                        message.innerHTML = ''
-                        message.appendChild(document.createTextNode('Please select a item.'))
-                        Array.from(zoneSelect.options).forEach(option => {
-                            option.style.display = 'block';
-                        });
-                        if(!zoneSelect.parentNode.classList.contains('hidden')){
-                            zoneSelect.parentNode.classList.add('hidden')
-                        }
+            let zoneSelect = document.querySelector('#zone')
+            let optionalInputs = document.querySelector('.optionalInputs')
+            zoneSelect.addEventListener('change', (e)=>{
+                if(e.target.value != 'All'){
+                    if(optionalInputs.classList.contains('hidden')){
+                        optionalInputs.classList.remove('hidden')
                     }
-                })
-            }else if(operation == 1){
-                $('#item').on('change', function(e){
-                    let codeInput = document.querySelector('#code')
-                    let serialInput = document.querySelector('#serial_number')
-                    let foundItem = unStockedItems.filter(item => item.id == e.target.value)[0]
-                    console.log(unStockedItems)
-                    if(foundItem.code != null && foundItem.code != ""){
-                        codeInput.value = foundItem.code
-                    }else{
-                        codeInput.value = ""
+                }else{
+                    if(!optionalInputs.classList.contains('hidden')){
+                        optionalInputs.classList.add('hidden')
                     }
-                    if(foundItem.serial_number != null && foundItem.serial_number != ""){
-                        serialInput.value = foundItem.serial_number
-                    }else{
-                        serialInput.value = ""
-                    }
-                })
-                let zoneSelect = document.querySelector('#zone')
-                let optionalInputs = document.querySelector('.optionalInputs')
-                zoneSelect.addEventListener('change', (e)=>{
-                    if(e.target.value != 'All'){
-                        if(optionalInputs.classList.contains('hidden')){
-                            optionalInputs.classList.remove('hidden')
-                        }
-                    }else{
-                        if(!optionalInputs.classList.contains('hidden')){
-                            optionalInputs.classList.add('hidden')
-                        }
-                    }
-                })
-            }else{
-                
-            }
-        })
-    }
+                }
+            })
+        }else{
+            
+        }
+    })
 </script>

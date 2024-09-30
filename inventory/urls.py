@@ -24,6 +24,7 @@ urlpatterns = [
     path('manage_stock/', views.ManageStock.as_view(), name='manage-stock'),
     path('manage_stock/<int:pk>/', views.ManageStock.as_view(), name='manage-stock-pk'),
     path('manage_stock/<str:operation>', views.ManageStock.as_view(), name='manage-stock'),
+    path('manage_stock/<str:operation>/<int:pk>', views.ManageStock.as_view(), name='manage-stock-status-pk'),
     path('add_stock/', views.AddStock.as_view(), name='add-stock'),
     path('purchases/', views.Purchase_list.as_view(), name='purchases'),
     path('purchases/<int:pk>/', views.Purchase_record.as_view(), name='purchase-record'),
