@@ -241,7 +241,6 @@
                 }
             {% endif %}
             {% if item.producer.pk is not None%}
-                $('#uni_modal').off('shown.bs.modal')
                 $('#uni_modal').on('shown.bs.modal', function() {
                     let producerBtn = document.querySelector('.producerBtn')
                     if (producerBtn != null){
