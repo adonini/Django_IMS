@@ -41,7 +41,7 @@
                         <td class="align-canter text-center light-text">{% if item.price is not None %}{{ item.price | intcomma }} €{% else %}{{ item.price }}{% endif %}</td>
                         <td class="align-canter text-center light-text" >{% if item.code is not None and item.code != '' %}{{item.code}}{% elif item.serial_number is not None and item.serial_number != '' %}{{item.serial_number}}{% else %}{{item.id}}{% endif %}</td>
                         <td class="align-canter text-center light-text"><div {% if item.status is not None %} class="{{item.status.name|lower}}" {% endif %}>{% if item.status is not None %}{{ item.status.name }}{% else %}{{item.status}}{% endif %}</div></td>
-                        <td class="align-canter text-center light-text">{% if item.telescope is not None %}{{ item.telescope.telescope.name }} - {{item.telescope.name}}{% else %}{{item.telescope  }}{% endif %}</td>
+                        <td class="align-canter text-center light-text">{% if item.status and item.status.name == 'Stored' %}{% if item.get_stockObject.zone.location.name == "Commissioning container" %} CC {% else %}{{item.get_stockObject.zone.location.name}}{% endif %}{%elif item.telescope is not None %}{{ item.telescope.telescope.name }} - {{item.telescope.name}}{% else %}{{item.telescope  }}{% endif %}</td>
                         <td class="align-center text-center light-text">
                             <button type="button" class="btn btn-bg-dark btn-sm item-data" href="javascript:void(0)" data-id="{{ item.pk }}" data-name = "{{item.group.name}}{%if item.code is not None%}/{{item.code}}{%elif item.serial_data is not None%}/{{item.serial_data}}{% endif %}" title="Info">
                                 INFO

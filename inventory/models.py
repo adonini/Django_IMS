@@ -154,6 +154,9 @@ class Item(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def get_stockObject(self):
+        return Stock.objects.filter(item=self).first()
+
     class Meta:
         db_table = 'items'
 
