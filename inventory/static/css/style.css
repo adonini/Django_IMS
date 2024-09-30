@@ -469,21 +469,6 @@ label{
 .critical p, .low p{
     margin: 0;
 }
-.statuses .title:first-of-type{
-    color: #E65C50;
-    text-shadow: 1px 1px black;
-}
-.statuses .title:not(.title:first-of-type){
-    color: #f57b00;
-    text-shadow: 1px 1px black;
-}
-.latest .title{
-    color: #22b24c;
-    text-shadow: 1px 1px black;
-}
-.title{
-    border-top: 1px solid #eef3f7;
-}
 .top, .bottom:not(table+.bottom){
     display: flex;
     flex-direction: column;
@@ -491,26 +476,40 @@ label{
 }
 .cardPurchases, .cardUses, .low, .critical{
     background-color: #fff !important;
-    border: 1px solid #0B0C38 !important;
+    border: 2px solid #0B0C38 !important;
     color: #0B0C38 !important;
-    box-shadow: #0B0C38 2px 2px 1px 1px;
     width: 13rem !important;
-    padding: 1rem !important;
+    padding: 0 !important;
     height: auto !important;
 }
+.cardPurchases>.cardHeader, .cardUses>.cardHeader, .low>.cardHeader, .critical>.cardHeader{
+    padding: 0.5rem;
+}
+.cardPurchases>.cardHeader, .cardUses>.cardHeader, .cardPurchases>.cardHeader h5, .cardUses>.cardHeader h5{
+    background-color: #0b0c38;
+    color: white;
+}
+.cardUses>.cardBody, .cardPurchases>.cardBody, .cardPurchases>.cardFooter{
+    margin-bottom: 0.5rem;
+}
 .critical{
-    box-shadow: #E65C50 2px 2px 1px 1px;
-    border-color: #FF6F61 !important;
+    border-color: #E65C50 !important;
 }
 .low{
-    box-shadow: #ee8721 2px 2px 1px 1px;
-    border-color: #f57b00 !important;
+    border-color: #ffc107 !important;
+}
+.critical>.cardHeader, .critical>.cardHeader h5{
+    background-color: #E65C50;
+    color: white;
+}
+.low>.cardHeader, .low>.cardHeader h5{
+    background-color: #ffc107;
+    color: #0B0C38;
 }
 .cardUses{
     width: 16rem !important;
     height: auto !important;
     min-height: 8rem;
-    padding: 1rem !important;
     margin-top: 0.5rem;
 }
 .cardUses>.cardBody{
@@ -589,4 +588,19 @@ label{
 }
 i{
     pointer-events: none;
+}
+.badge{
+    font-size: large;
+}
+.bLow{
+    background-color: #ffc107; 
+    color: #0B0C38;
+}
+.bCrit{
+    background-color: #E65C50; 
+    color: white;
+}
+.statuses> h5{
+    border-top: 1px solid #eef3f7;
+    padding-top: 0.5rem;
 }
