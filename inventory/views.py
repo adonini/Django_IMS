@@ -211,6 +211,7 @@ class AddItem(LoginRequiredMixin, View):
 class ManageItem(LoginRequiredMixin, View):
     def get(self, request, pk=None):
         context['page_title'] = "Manage Item"
+        context['today'] = date.today()
         if pk:
             item = Item.objects.get(id=pk)
             context['item'] = item
@@ -419,8 +420,8 @@ class Purchase_list(LoginRequiredMixin, View):
     
 class ManagePurchase(LoginRequiredMixin, View):
     def get(self, request, pk=None):
-        logger.debug(pk)
         context['page_title'] = "Manage Purchase"
+        context['today'] = date.today()
         context['items'] = list(Item.objects.filter(status__isnull=True).values('id', 'group__name', 'code', 'serial_number'))
         context['payments'] = Payment_sources.objects.all()
         context['suppliers'] = Supplier.objects.all()

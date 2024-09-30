@@ -39,7 +39,7 @@
                 </div>
                 <div class="form-group mb-3 ">
                     <label for="expected_delivery_date" class="control-label">Expected Delivery Date</label>
-                    <input type="date" class="form-control rounded-0" id="expected_delivery_date" name="expected_delivery_date" value="{{ foundPurchase.expected_delivery_date|date:'Y-m-d' }}">
+                    <input type="date" class="form-control rounded-0" id="expected_delivery_date" name="expected_delivery_date" min="{{today|date:"Y-m-d"}}" value="{{ foundPurchase.expected_delivery_date|date:'Y-m-d' }}">
                 </div>
                 <div class="form-group mb-3 ">
                     <label for="standard_lead_time" class="control-label">Standard Lead Time</label>
@@ -77,6 +77,11 @@
 </div> {% endcomment %}
 <script>
     $(document).ready(function() {
+        let orderButton = document.querySelector('#order_date')
+        let expectedDelDat = document.querySelector('#expected_delivery_date')
+        orderButton.addEventListener('change', (e)=>{
+            expectedDelDat.min = e.target.value
+        })
         $('#purchase-form').submit(function(e) {
             // preventing from page reload and default actions
             e.preventDefault();

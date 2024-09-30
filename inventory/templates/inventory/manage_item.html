@@ -54,7 +54,7 @@
                 </div>
                 <div class="form-group mb-3 ">
                     <label for="expiration_date" class="control-label">Expiration date</label>
-                    <input type="date" class="form-control rounded-0" id="expiration_date" name="expiration_date" value="{{ item.expiration_date|date:'Y-m-d' }}">
+                    <input type="date" class="form-control rounded-0" id="expiration_date" name="expiration_date" min="{{today|date:"Y-m-d"}}" value="{{ item.expiration_date|date:'Y-m-d' }}">
                 </div>
                 <div class="form-group mb-3 ">
                     <label for="code" class="control-label">Code</label>
