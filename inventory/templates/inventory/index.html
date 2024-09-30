@@ -136,6 +136,7 @@
 						{% if user|has_group:"admin" or user|has_group:"technician" %}
 							<div class="cardFooter d-flex flex-column align-items-center">
 								<button type="button" class="btn btn-bg-dark btn-sm purchase-data mb-1" href="javascript:void(0)" data-id="{{ purchase.pk }}" data-status="{{purchase.status.name|lower}}" title="Info">
+									<i class="fa fa-info-circle"></i>
 									INFO
 								</button>
 								<button class="btn btn-bg-dark modalButton edit receivePurchase" data-id="{{purchase.id}}"><i class="fa fa-boxes-stacked"></i><p>Receive</p></button>

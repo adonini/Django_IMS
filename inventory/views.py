@@ -291,21 +291,21 @@ class AddStock(LoginRequiredMixin, View):
             else:
                 form = ModifyStockForm(request.POST, instance=stock)
             if form.is_valid():
-                if request.POST['id']:
+                if request.POST['id'] and not 'telescope' in request.POST:
                     form.save()
                     messages.success(request, 'Stock has been moved successfully.')
                 elif 'telescope' in request.POST and request.POST['stock_type'] == "2":
-                    item = Item.objects.get(pk=request.POST['item'])
+                    item = Stock.objects.get(pk=request.POST['id']).item
                     if request.POST['telescope'] == "None":
                         item.status = Item_status.objects.get(name='In use')
                         item.save()
                     else:
                         telescope = Telescope_structure.objects.get(id=int(request.POST['telescope']))
-                        stock_entry = Stock.objects.get(item=int(request.POST['item']), zone=int(request.POST['zone']))
-                        stock_entry.delete()
                         item.status = Item_status.objects.get(name='In use')
                         item.telescope = telescope
                         item.save()
+                        stock_entry = Stock.objects.get(pk=request.POST['id'])
+                        stock_entry.delete()
                     messages.success(request, 'Item usage saved successfully.')
                 else:
                     logger.debug('New stock')
@@ -343,13 +343,6 @@ class ManageStock(LoginRequiredMixin, View):
                 context['items'] = items
                 context['unStockedItems'] = unStockedItems
                 context['operation'] = 1
-            else:
-                storedStatus = Item_status.objects.get(name='Stored')
-                items = Item.objects.filter(status_id=storedStatus).order_by('group__name')
-                telescopes = Telescope_structure.objects.all()
-                context['items'] = items
-                context['telescopes'] = telescopes
-                context['operation'] = 2
             zones = Zone.objects.order_by('location__name').all()
             context['zones'] = zones
             types = Stock_Type.objects.all()
@@ -358,12 +351,23 @@ class ManageStock(LoginRequiredMixin, View):
             context['page_title'] = "Add New Stock"
             context['stock'] = {}
         else:
-            context['page_title'] = "Manage Stock"
-            stock = Stock.objects.get(id=pk)
-            zones = Zone.objects.order_by('location__name').all()
-            context['stock'] = stock
-            context['zones'] = zones
-            return render(request, 'inventory/move_stock.html', context)
+            if operation == 'use':
+                stock = Stock.objects.get(id=pk)
+                telescopes = Telescope_structure.objects.all()
+                zones = Zone.objects.order_by('location__name').all()
+                context['zones'] = zones
+                types = Stock_Type.objects.all()
+                context['types'] = types
+                context['stock'] = stock
+                context['telescopes'] = telescopes
+                context['operation'] = 2
+            else:
+                context['page_title'] = "Manage Stock"
+                stock = Stock.objects.get(id=pk)
+                zones = Zone.objects.order_by('location__name').all()
+                context['stock'] = stock
+                context['zones'] = zones
+                return render(request, 'inventory/move_stock.html', context)
         return render(request, 'inventory/manage_stock.html', context)
 
 class MarkStockOld(LoginRequiredMixin, View):

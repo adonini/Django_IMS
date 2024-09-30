@@ -587,3 +587,6 @@ label{
     color: white;
     background-color: #E65C50;
 }
+i{
+    pointer-events: none;
+}
