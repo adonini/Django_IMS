@@ -493,17 +493,17 @@ label{
     background-color: #fff !important;
     border: 1px solid #0B0C38 !important;
     color: #0B0C38 !important;
-    box-shadow: #0B0C38 3px 3px 5px 1px;
+    box-shadow: #0B0C38 2px 2px 1px 1px;
     width: 13rem !important;
     padding: 1rem !important;
     height: auto !important;
 }
 .critical{
-    box-shadow: #E65C50 3px 3px 5px 1px;
+    box-shadow: #E65C50 2px 2px 1px 1px;
     border-color: #FF6F61 !important;
 }
 .low{
-    box-shadow: #ee8721 3px 3px 5px 1px;
+    box-shadow: #ee8721 2px 2px 1px 1px;
     border-color: #f57b00 !important;
 }
 .cardUses{
@@ -562,9 +562,6 @@ label{
     .dt-search{
         display: flex;
         align-items: center;
-    }
-    .top1End{
-
     }
 }
 .trSelected{
