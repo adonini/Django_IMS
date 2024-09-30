@@ -22,7 +22,7 @@
 					<div class="d-flex flex-column statuses">
 						<h3 class="text-center">Group stock status</h3>
 						{% if critical_stock %}
-							<h5 class="mt-2 mb-3 w-100 text-center p-1 title">Critical</h5>
+							<h5 class="mt-2 mb-3 w-100 text-center"><span class="badge bCrit">Critical</span></h5>
 							<div class="d-flex w-100 dashWrapper flex-wrap gap-3">
 								{% for element in critical_stock %}
 									<div class="card critical">
@@ -46,7 +46,7 @@
 							</div>
 						{% endif %}
 						{% if low_stock %}
-							<h5 class="mt-2 mb-3 w-100 text-center p-1 title">Low</h5>
+							<h5 class="mt-0 mb-3 w-100 text-center"><span class="badge bLow">Low</span></h5>
 							<div class="d-flex w-100 dashWrapper">
 								{% for element in low_stock %}
 									<div class="card low">
