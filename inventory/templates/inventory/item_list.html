@@ -23,11 +23,11 @@
                         <th class="text-center dark-text">Sub-category</th>
                         <th class="text-center dark-text">Group</th>
                         <th class="text-center dark-text">Producer</th>
-                        <th class="text-center dark-text">Price</th>
                         <th class="text-center dark-text">Code</th>
+                        <th class="text-center dark-text">Serial Number</th>
                         <th class="text-center dark-text">Status</th>
                         <th class="text-center dark-text">Place</th>
-                        <th class="text-center dark-text">Details</th>
+                        <th class="text-center dark-text">{% if user|has_group:"admin" or user|has_group:"technician" %} Actions {% else %} Details {% endif %}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -37,16 +37,34 @@
                         <td class="align-canter text-center light-text">{% if item.group.sub_category.category is not None %}{{ item.group.sub_category.category.name }}{% else %}{{item.group.sub_category.category}}{% endif %}</td>
                         <td class="align-canter text-center light-text">{% if item.group.sub_category is not None %}{{ item.group.sub_category.name }}{% else %}{{item.group.sub_category}}{% endif %}</td>
                         <td class="align-canter text-center light-text">{% if item.group is not None %}{{ item.group.name }}{% else %}{{item.group}}{% endif %}</td>
-                        <td class="align-canter text-center light-text">{% if item.producer is not None %}{{ item.producer.name }}{% else %}{{item.producer}}{% endif %}</td>
-                        <td class="align-canter text-center light-text">{% if item.price is not None %}{{ item.price | intcomma }} €{% else %}{{ item.price }}{% endif %}</td>
-                        <td class="align-canter text-center light-text" >{% if item.code is not None and item.code != '' %}{{item.code}}{% elif item.serial_number is not None and item.serial_number != '' %}{{item.serial_number}}{% else %}{{item.id}}{% endif %}</td>
-                        <td class="align-canter text-center light-text"><div {% if item.status is not None %} class="{{item.status.name|lower}}" {% endif %}>{% if item.status is not None %}{{ item.status.name }}{% else %}{{item.status}}{% endif %}</div></td>
-                        <td class="align-canter text-center light-text">{% if item.status and item.status.name == 'Stored' %}{% if item.get_stockObject.zone.location.name == "Commissioning container" %} CC {% else %}{{item.get_stockObject.zone.location.name}}{% endif %}{%elif item.telescope is not None %}{{ item.telescope.telescope.name }} - {{item.telescope.name}}{% else %}{{item.telescope}}{% endif %}</td>
-                        <td class="align-center text-center light-text">
-                            <button type="button" class="btn btn-bg-dark btn-sm item-data" href="javascript:void(0)" data-id="{{ item.pk }}" data-name = "{{item.group.name}}{%if item.code is not None%}/{{item.code}}{%elif item.serial_data is not None%}/{{item.serial_data}}{% endif %}" title="Info">
-                                <i class="fa fa-info-circle"></i>
-                                INFO
-                            </button>
+                        <td class="align-canter text-center light-text">{% if item.producer is not None %}{{ item.producer.name }}{% else %} - {% endif %}</td>
+                        <td class="align-canter text-center light-text" >{% if item.code is not None and item.code != '' %}{{item.code}}{% else %} - {% endif %}</td>
+                        <td class="align-canter text-center light-text">{% if item.serial_number is not None and item.serial_number != '' %}{{item.serial_number}}{% else %} - {% endif %}</td>
+                        <td class="align-canter text-center light-text"><div {% if item.status is not None %} class="{{item.status.name|lower}}" {% endif %}>{% if item.status is not None %}{{ item.status.name }}{% else %} - {% endif %}</div></td>
+                        <td class="align-canter text-center light-text">{% if item.status and item.status.name == 'Stored' %}{% if item.get_stockObject.zone.location.name == "Commissioning container" %} CC {% else %}{{item.get_stockObject.zone.location.name}}{% endif %}{%elif item.telescope is not None %}{{ item.telescope.telescope.name }} - {{item.telescope.name}}{% else %} - {% endif %}</td>
+                        <td class="align-center text-center light-text d-flex flex-wrap justify-content-around">
+                            <div>
+                                {% if user|has_group:"technician" or user|has_group:"admin" %}
+                                    <button class="btn btn-sm selected" id="{{item.pk}}" title="Edit item">
+                                        <i class="fa fa-edit"></i>
+                                    </button>
+                                {% endif %}
+                                <button type="button" class="btn btn-bg-dark btn-sm item-data {% if not user|has_group:'technician' and not user|has_group:'admin' %} widerIcon {% endif %}" href="javascript:void(0)" data-id="{{ item.pk }}" data-name = "{{item.group.name}}{%if item.code is not None%}/{{item.code}}{%elif item.serial_data is not None%}/{{item.serial_data}}{% endif %}" title="Item information">
+                                    <i class="fa fa-info-circle"></i>
+                                </button>
+                                {% if user|has_group:"technician" or user|has_group:"admin" %}
+                                    </div>
+                                    <div class="mt-1">
+                                        <button type="button" class="btn btn-sm selected {% if not user|has_group:'admin' %} widerIcon {% endif %}" href="javascript:void(0)" data-id="{{ item.pk }}" title="Set as broken">
+                                            <i class="fa fa-chain-broken"></i>
+                                        </button>
+                                        {% if user|has_group:"admin" %}
+                                            <button class="btn btn-sm highlight-color" id="{{item.pk}}" title="Delete item">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        {% endif %}
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

@@ -12,8 +12,11 @@
         <li class="list-group-item"><strong>Total group quantity</strong> <br> {{ stock.count_inventory}}</li>
     </ul>
 </div> 
-<div class="mt-3 d-flex justify-content-center oldPill {% if not stock.old %}hidden{% endif %}">
-    <p class="text-center justify-content-center text-white edit bg-dark rounded-pill w-25">Old</p>
+<div class="btnWrapper d-flex justify-content-center w-100">
+    <div class="mt-3 d-flex justify-content-center align-items-center oldPill {% if not stock.old %}hidden{% endif %}">
+        <i class="fa fa-exclamation-triangle "></i>
+        <p class="text-center justify-content-center mb-0 ms-1">Old</p>
+    </div>
 </div>
 <h5>Stock movements</h5>
 <table class="table table-sm table-responsive table-hover" style="width:100%" id="stock-movements"> {% comment %} display compact {% endcomment %}
