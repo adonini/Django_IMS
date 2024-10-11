@@ -1,3 +1,4 @@
+{% load custom_tags %}
 <div class="container-fluid">
     <div class="err-msg"></div>
     <form action=" " id="item-form">
@@ -13,38 +14,51 @@
         {% endif %}
         <div class="inputs">
             <div class="inputsLeft">
-                <div class="form-group mb-3">
-                    <label for="group" class="control-label">Group</label>
-                    <select class="form-control rounded-0" name="group" id="group">
-                        {% if not item.group %}
-                            <option value="" disabled selected >-----</option>
-                        {% endif %}
+                <div class="form-group mb-3 position-relative">
+                    <label for="group" class="control-label">Item</label>
+                    {% if not item.part_number.group %}
+                        <input type="text" class="form-control rounded-0" id="groupSelector" placeholder="Type to filter the items" autocomplete="off">
+                        <input type="hidden" id="selectedGroupId" name="group" value="">
+                    {% else %}
+                        <input type="text" class="form-control rounded-0" id="groupSelector" placeholder="Type to filter the items" value="{{item.part_number.group.name}}" autocomplete="off" {% if user|has_group:"technician" %}disabled{% endif %}>
+                        <input type="hidden" id="selectedGroupId" name="group" value="{{item.part_number.group.id}}">
+                    {% endif %}
+                    <div class="groupOptionsContainer" hidden>
                         {% for group in groups %}
-                            <option value="{{ group.id }}" {% if group.id == item.group.id %} selected {% endif %}>{{ group.name }}</option>
+                            <p class="option" data-id="{{group.id}}">{{group.name}}</p>
                         {% endfor %}
-                    </select>
+                    </div>
                 </div>
-                <div class="form-group mb-3 ">
-                    <label for="status" class="control-label">Producer</label>
-                    <select class="form-control rounded-0" name="producer" id="producer">
-                        {% if producers|length > 1 %}
-                            <option value="" {% if not item.producer %} selected {% endif %}>-----</option>
-                        {% endif %}
+                <div class="form-group mb-3 position-relative">
+                    <label for="producerSelector" class="control-label">Producer</label>
+                    {% if not item.producer %}
+                        <input type="text" class="form-control rounded-0" id="producerSelector" placeholder="Type to filter the items" autocomplete="off">
+                        <input type="hidden" id="selectedProducerId" name="producer" value="">
+                    {% else %}
+                        <input type="text" class="form-control rounded-0" id="producerSelector" placeholder="Type to filter the items" value="{{item.producer.name}}" autocomplete="off">
+                        <input type="hidden" id="selectedProducerId" name="producer" value="{{item.producer.id}}">
+                    {% endif %}
+                    <div class="producerOptionsContainer" hidden>
                         {% for producer in producers %}
-                            <option value="{{ producer.id }}" {% if producer.id == item.producer.id or producers|length == 1 %} selected {% endif %}>{{ producer.name }}</option>
+                            <p class="option" data-id="{{producer.id}}">{{producer.name}}</p>
                         {% endfor %}
-                    </select>
+                    </div>
                 </div>
                 <div class="form-group mb-3 ">
-                    <label for="serial_number" class="control-label">Serial Number</label>
-                    <input type="text" class="form-control rounded-0" id="serial_number" name="serial_number" value="{{ item.serial_number }}">
+                    <label for="part_number" class="control-label">Part Number</label>
+                    {% if not item.part_number %}
+                        <input type="text" class="form-control rounded-0" id="part_number" name="part_number" value="" disabled autocomplete="off" placeholder="Select an Item first">
+                        <input type="hidden" id="part_numberId" name="part_number" value="">
+                    {% else %}
+                        <input type="text" class="form-control rounded-0" id="part_number" placeholder="Type to filter the items" value="{{item.part_number.code}}" autocomplete="off">
+                        <input type="hidden" id="part_numberId" name="part_number" value="{{item.part_number.code}}">
+                    {% endif %}
+                    <div class="part_numberContainer" hidden>
+                    </div>
                 </div>
                 <div class="form-group mb-3 ">
                     <label for="model" class="control-label">Model</label>
                     <input type="text" class="form-control rounded-0" id="model" name="model" value="{{ item.model }}">
-                </div>
-                <div class="spacer hidden">
-
                 </div>
             </div>
             <div class="inputsRight">
@@ -57,8 +71,11 @@
                     <input type="date" class="form-control rounded-0" id="expiration_date" name="expiration_date" min="{{today|date:"Y-m-d"}}" value="{{ item.expiration_date|date:'Y-m-d' }}">
                 </div>
                 <div class="form-group mb-3 ">
-                    <label for="code" class="control-label">Code</label>
-                    <input type="text" class="form-control rounded-0" id="code" name="code" value="{{ item.code }}">
+                    <label for="serial_number" class="control-label">Serial Number</label>
+                    <input type="text" class="form-control rounded-0" id="serial_number" name="serial_number" value="{{ item.serial_number }}">
+                </div>
+                <div class="spacer hidden">
+    
                 </div>
                 <div class="form-group mb-3 ">
                     <label for="datasheet_url" class="control-label">Datasheet Url</label>
@@ -73,100 +90,226 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="spacer hidden"></div>
-                    
-                </div>
             </div>
         </div>
     </form>
 </div>
 <script>
+    partNumber_data = {{partNumber_data | safe}}
+    alertDiv = document.querySelector('.err-msg')
     $(document).ready(function() {
         $('#item-form').submit(function(e) {
             // preventing from page reload and default actions
             e.preventDefault();
-            var _this = $(this)
-            $('.err-msg').remove();
-            var el = $('#alert')
-            el.addClass("alert alert-danger err-msg")
-            el.hide()
-            if (_this[0].checkValidity() == false) {
-                _this[0].reportValidity();
-                return false;
-            }
-            start_loader();
-            $.ajax({
-                url: "{% url 'add-item' %}",
-                data: new FormData($(this)[0]),
-                cache: false,
-                contentType: false,
-                processData: false,
-                method: 'POST',
-                type: 'POST',
-                dataType: 'json',
-                error: err => {
-                    console.log(err)
-                    alert("An error occured ", 'error');
-                    end_loader();
-                },
-                success: function(resp) {
-                    if (typeof resp == 'object' && resp.status == 'success') {
-                        el.removeClass("alert alert-danger err-msg ")
-                        location.reload()
-                    } else if (resp.status == 'failed' && !!resp.msg) {
-                        el.html(resp.msg)
-                    } else {
-                        el.text("An error occured ", 'error');
-                        end_loader();
-                        console.err(resp)
-                    }
-                    _this.prepend(el)
-                    el.show('slow')
-                    $("html, body, .modal ").scrollTop(0);
-                    end_loader()
+            let groupValue = document.querySelector('#selectedGroupId')
+            if(groupValue != null){
+                var _this = $(this)
+                //$('.err-msg').remove();
+                var el = $('.err-msg')
+                el.addClass("alert alert-danger err-msg")
+                el.hide()
+                if (_this[0].checkValidity() == false) {
+                    _this[0].reportValidity();
+                    return false;
                 }
-            })
-            
+                start_loader();
+                $.ajax({
+                    url: "{% url 'add-item' %}",
+                    data: new FormData($(this)[0]),
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    method: 'POST',
+                    type: 'POST',
+                    dataType: 'json',
+                    error: err => {
+                        console.log(err)
+                        alert("An error occured ", 'error');
+                        end_loader();
+                    },
+                    success: function(resp) {
+                        if (typeof resp == 'object' && resp.status == 'success') {
+                            el.removeClass("alert alert-danger err-msg ")
+                            location.reload()
+                        } else if (resp.status == 'failed' && !!resp.msg) {
+                            el.html(resp.msg)
+                        } else {
+                            el.text("An error occured ", 'error');
+                            end_loader();
+                            console.log(resp)
+                        }
+                        _this.prepend(el)
+                        el.show('slow')
+                        $("html, body, .modal ").scrollTop(0);
+                        end_loader()
+                    }
+                })
+            }else{
+                let el = $('#alert')
+                el.addClass("alert alert-danger err-msg")
+                el.innerHTML = "You must select an option, writting is just to filter."
+            }
         })
     })
-    let groupSelect = document.querySelector('#group')
-    groupSelect.addEventListener('change', ()=>{
-        let el = document.querySelector('.err-msg')
-        el.classList.remove("alert", "alert-danger")
-        el.innerHTML = ""
-    })
-    let quantityInput = document.getElementById('quantity')
-    quantityInput.addEventListener('change', ()=>{
-        let codeInput = document.getElementById('code')
-        let serialInput = document.getElementById('serial_number')
-        let spacers = document.querySelectorAll('.spacer')
-        if(quantityInput.value != 1){
-            if(!codeInput.parentNode.classList.contains('hidden')){
-                codeInput.parentNode.classList.add('hidden')
-                codeInput.value = ''
-            }
-            if(!serialInput.parentNode.classList.contains('hidden')){
-                serialInput.parentNode.classList.add('hidden')
-                serialInput.value = ''
-            }
-            spacers.forEach((spacer)=>{
-                if(spacer.classList.contains('hidden')){
-                    spacer.classList.remove('hidden')
+    quantityInput = document.getElementById('quantity')
+    if (quantityInput != null){
+        quantityInput.addEventListener('change', ()=>{
+            let serialInput = document.getElementById('serial_number')
+            let spacers = document.querySelectorAll('.spacer')
+            if(quantityInput.value != 1){
+                if(!serialInput.parentNode.classList.contains('hidden')){
+                    serialInput.parentNode.classList.add('hidden')
+                    serialInput.value = ''
                 }
-            })
-        }else{
-            spacers.forEach((spacer)=>{
-                if(!spacer.classList.contains('hidden')){
-                    spacer.classList.add('hidden')
+                spacers.forEach((spacer)=>{
+                    if(spacer.classList.contains('hidden')){
+                        spacer.classList.remove('hidden')
+                    }
+                })
+            }else{
+                spacers.forEach((spacer)=>{
+                    if(!spacer.classList.contains('hidden')){
+                        spacer.classList.add('hidden')
+                    }
+                })
+                if(serialInput.parentNode.classList.contains('hidden')){
+                    serialInput.parentNode.classList.remove('hidden')
                 }
+            }
+        })
+    }
+    //New Filter and selector input -- Groups
+    {% if user|has_group:"admin" %}
+        groupInput = document.querySelector('#groupSelector')
+        groupOptionsContainer = document.querySelector('.groupOptionsContainer')
+        selectedGroupId = document.querySelector('#selectedGroupId')
+        groupOptions = [...groupOptionsContainer.children]
+        groupInput.addEventListener('focus', (e)=>{
+            if(alertDiv.childNodes.length > 0){
+                alertDiv.classList.remove('alert-danger')
+                alertDiv.innerHTML = ""
+            }
+            groupInput.value = ""
+            setTimeout(()=>{groupOptionsContainer.removeAttribute('hidden')}, 150)
+            groupOptionsContainer.innerHTML = ""
+            groupOptions.forEach(value =>{
+                    groupOptionsContainer.appendChild(value)
+                })
+        })
+        groupInput.addEventListener('focusout', (e)=>{
+            setTimeout(()=>{groupOptionsContainer.setAttribute('hidden', '')}, 150)
+        })
+        groupInput.addEventListener('input', (e)=>{
+            groupOptionsContainer.innerHTML = ""
+            if (groupInput.value.length > 0){
+                let newValues = groupOptions.filter((element) => element.innerHTML.toLocaleLowerCase().includes(groupInput.value.toLocaleLowerCase()))
+                if(newValues.length > 0){
+                    newValues.forEach(value =>{
+                        groupOptionsContainer.appendChild(value)
+                    })
+                }else{
+                    let emptyPar = document.createElement('p')
+                    emptyPar.appendChild(document.createTextNode('There is no matching items'))
+                    emptyPar.classList.add('option')
+                    emptyPar.setAttribute('disabled', '')
+                    groupOptionsContainer.appendChild(emptyPar)
+                }
+            }else{
+                groupOptions.forEach(value =>{
+                    groupOptionsContainer.appendChild(value)
+                })
+            }
+        })
+        groupOptions.forEach(option =>{
+            option.addEventListener('click', (e)=>{
+                groupInput.value = e.target.innerHTML
+                selectedGroupId.value = e.target.dataset.id
+                selectedGroupId.dispatchEvent(new Event('change'))
+                groupOptionsContainer.innerHTML = ""
+                groupOptions.forEach(value =>{
+                    groupOptionsContainer.appendChild(value)
+                })
             })
-            if(codeInput.parentNode.classList.contains('hidden')){
-                codeInput.parentNode.classList.remove('hidden')
-            }
-            if(serialInput.parentNode.classList.contains('hidden')){
-                serialInput.parentNode.classList.remove('hidden')
-            }
-        }
+        })
+    {% endif %}
+    //Filter Producers
+    producerInput = document.querySelector('#producerSelector')
+    producerOptionsContainer = document.querySelector('.producerOptionsContainer')
+    selectedProducerId = document.querySelector('#selectedProducerId')
+    producerOptions = [...producerOptionsContainer.children]
 
+    producerInput.addEventListener('focus', (e)=>{
+        if(alertDiv.childNodes.length > 0){
+            alertDiv.classList.remove('alert-danger')
+            alertDiv.innerHTML = ""
+        }
+        producerInput.value = ""
+        setTimeout(()=>{producerOptionsContainer.removeAttribute('hidden')}, 150)
+        producerOptionsContainer.innerHTML = ""
+        producerOptions.forEach(value =>{
+                producerOptionsContainer.appendChild(value)
+            })
+    })
+    producerInput.addEventListener('focusout', (e)=>{
+        setTimeout(()=>{producerOptionsContainer.setAttribute('hidden', '')}, 150)
+    })
+    producerInput.addEventListener('input', (e)=>{
+        producerOptionsContainer.innerHTML = ""
+        if (producerInput.value.length > 0){
+            let newValues = producerOptions.filter((element) => element.innerHTML.toLocaleLowerCase().includes(producerInput.value.toLocaleLowerCase()))
+            if(newValues.length > 0){
+                newValues.forEach(value =>{
+                    producerOptionsContainer.appendChild(value)
+                })
+            }else{
+                let emptyPar = document.createElement('p')
+                emptyPar.appendChild(document.createTextNode('There is no matching items'))
+                emptyPar.classList.add('option')
+                emptyPar.setAttribute('disabled', '')
+                producerOptionsContainer.appendChild(emptyPar)
+            }
+        }else{
+            producerOptions.forEach(value =>{
+                producerOptionsContainer.appendChild(value)
+            })
+        }
+    })
+    producerOptions.forEach(option =>{
+        option.addEventListener('click', (e)=>{
+            producerInput.value = e.target.innerHTML
+            selectedProducerId.value = e.target.dataset.id
+            producerOptionsContainer.innerHTML = ""
+            producerOptions.forEach(value =>{
+                producerOptionsContainer.appendChild(value)
+            })
+        })
+    })
+    //Part_number selector
+    let groupId = document.querySelector('#selectedGroupId')
+    let part_numberInput = document.querySelector('#part_number')
+    let part_numberId = document.querySelector('#part_numberId')
+    let part_numberContainer = document.querySelector('.part_numberContainer')
+    groupId.addEventListener('change', (e)=>{
+        part_numberContainer.innerHTML = ""
+        part_numberInput.removeAttribute('disabled')
+        part_numberInput.placeholder = 'Select or type a new part number'
+        partNumber_data[e.target.value].forEach(element=>{
+            let p_part_number = document.createElement('p')
+            p_part_number.classList.add('option')
+            p_part_number.dataset.id = element.code
+            p_part_number.appendChild(document.createTextNode(element.code))
+            p_part_number.addEventListener('click', (e)=>{
+                part_numberInput.value = e.target.innerHTML
+                part_numberId.value = e.target.dataset.id
+            })
+            part_numberContainer.appendChild(p_part_number)
+        })
+        part_numberInput.addEventListener('focus', (e)=>{
+            part_numberInput.value = ""
+            setTimeout(()=>{part_numberContainer.removeAttribute('hidden')}, 150)
+        })
+        part_numberInput.addEventListener('focusout', (e)=>{
+            setTimeout(()=>{part_numberContainer.setAttribute('hidden', '')}, 150)
+        })
     })
 </script>

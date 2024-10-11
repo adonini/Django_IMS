@@ -58,7 +58,6 @@ class Group(models.Model):
     sub_category = models.ForeignKey(Sub_category, on_delete=models.CASCADE, null=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True)
     image = models.ImageField(upload_to='imgs/', blank=True, null=True)
-    minimum_stock = models.SmallIntegerField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -68,11 +67,27 @@ class Group(models.Model):
     def __str__(self):
         return self.name
 
+class PartNumber(models.Model):
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True)
+    code = models.CharField(max_length=150, blank=False, null=False)
+    minimum_stock = models.SmallIntegerField(blank=True, null=True)
+    class Meta:
+        db_table = 'part_number'
+        verbose_name = 'Part Number'
+        verbose_name_plural = 'Part Numbers'
+
+    def __str__(self):
+        return f'{self.code}'
+    
     def group_stock(self):
-        stock_items = Stock.objects.filter(item__group=self.pk)
+        stock_items = Stock.objects.filter(item__part_number=self.pk).exclude(item__status=Item_status.objects.get(name='Broken'))
         current_stock = len(stock_items)
         return current_stock
 
+    def pending_purchases(self):
+        purchase_items = Purchase.objects.filter(item__part_number=self.pk, purchase_group__status=Purchase_status.objects.get(name='Purchased'))
+        current_purchase = len(purchase_items)
+        return current_purchase
 
 class Producer(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
@@ -141,8 +156,7 @@ def get_unmanaged_status():
 
 
 class Item(models.Model):
-    group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True)
-    code = models.CharField(max_length=150, blank=True, null=True)
+    part_number = models.ForeignKey(PartNumber, on_delete=models.CASCADE, null=True)
     serial_number = models.CharField(max_length=150, blank=True, null=True)
     model = models.CharField(max_length=100, blank=True, null=True)
     producer = models.ForeignKey(Producer, on_delete=models.SET_NULL, null=True)
@@ -161,7 +175,7 @@ class Item(models.Model):
         db_table = 'items'
 
     def __str__(self):
-        return f'{self.group} - {self.model} ({self.serial_number})'
+        return f'{self.part_number.group} - {self.model} ({self.serial_number})'
 
 
 class Stock_Type(models.Model):
@@ -222,7 +236,7 @@ class Stock(models.Model):
         return f'{self.item} - #{self.quantity}'
 
     def count_inventory(self):
-        stocks = Stock.objects.filter(item__group__id=self.item.group.id, zone=self.zone)
+        stocks = Stock.objects.filter(item__part_number__group__id=self.item.part_number.group.id, zone=self.zone)
         stockIn = 0
         stockOut = 0
         for elements in stocks:

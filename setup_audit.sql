@@ -26,8 +26,7 @@ CREATE TABLE IF NOT EXISTS deleted_items (
     id SERIAL PRIMARY KEY,
     item_id INTEGER,  
     status_id INTEGER,
-    group_id INTEGER,
-    code TEXT,
+    part_number_id INTEGER,
     serial_number TEXT,
     deleted_by TEXT NOT NULL, 
     deleted_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP  
@@ -110,10 +109,12 @@ BEGIN
         username := 'unknown';
     END IF;
 
+    RAISE NOTICE 'El registro completo de NEW es: %', row_to_json(NEW);
+
     IF TG_TABLE_NAME = 'stocks' THEN
         related_id_value := NEW.item_id::TEXT;
     ELSIF TG_TABLE_NAME = 'items' THEN
-        related_id_value := NEW.group_id::TEXT;
+        related_id_value := NEW.part_number_id::TEXT;
     ELSE
         related_id_value := NULL;
     END IF;
@@ -156,7 +157,7 @@ BEGIN
     IF TG_TABLE_NAME = 'stocks' THEN
         related_id_value := OLD.item_id::TEXT;
     ELSIF TG_TABLE_NAME = 'items' THEN
-        related_id_value := OLD.group_id::TEXT;
+        related_id_value := OLD.part_number_id::TEXT;
     ELSE
         related_id_value := NULL;
     END IF;
@@ -197,8 +198,7 @@ BEGIN
     INSERT INTO deleted_items (
         item_id, 
         status_id, 
-        group_id, 
-        code, 
+        part_number_id, 
         serial_number, 
         deleted_by, 
         deleted_at
@@ -206,8 +206,7 @@ BEGIN
     VALUES (
         OLD.id, 
         OLD.status_id, 
-        OLD.group_id, 
-        OLD.code, 
+        OLD.part_number_id, 
         OLD.serial_number, 
         username, 
         CURRENT_TIMESTAMP
@@ -293,13 +292,13 @@ EXECUTE FUNCTION log_delete();
 DROP INDEX IF EXISTS unique_item_stock;
 CREATE UNIQUE INDEX unique_item_stock ON stocks (item_id, stock_type_id);
 
-DROP INDEX IF EXISTS unique_item_code;
-CREATE UNIQUE INDEX unique_item_code ON items (code)
-WHERE code IS NOT NULL AND code != '';
+ DROP INDEX IF EXISTS unique_item_code;
+-- CREATE UNIQUE INDEX unique_item_code ON items (code)
+-- WHERE code IS NOT NULL AND code != '';
 
 DROP INDEX IF EXISTS unique_item_serial_number;
-CREATE UNIQUE INDEX unique_item_serial_number ON items (serial_number)
-WHERE serial_number IS NOT NULL AND serial_number != '';
+-- CREATE UNIQUE INDEX unique_item_serial_number ON items (serial_number)
+-- WHERE serial_number IS NOT NULL AND serial_number != '';
 
 DROP INDEX IF EXISTS unique_purchase_group_order;
 CREATE UNIQUE INDEX unique_purchase_group_order ON purchase_groups (order_number)

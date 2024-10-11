@@ -1,14 +1,20 @@
 <div class="container-fluid">
     <p class="guide-message"></p>
+    <div class="text-center">
+        <h3>Set Item as Broken</h3>
+        <p>By finishing this action you will set the item as broken and store it in the place that you choose.</p>
+    </div>
     <form action=" " id="stockMove-form">
         {% csrf_token %}
-        <input type="hidden" name="id" value="{{ stock.pk }}">
-        <div class="form-group mb-3 {% if operation == 2 %} hidden {% endif %}">
+        <input type="hidden" name="id" value="{{ item.pk }}">
+        <div class="form-group mb-3">
             <label for="zone" class="control-label">Zones</label>
             <select class="form-control rounded-0" name="zone" id="zone">
                 {% for zone in zones %}
                     {% if zone.id != stock.zone.id %}
-                        <option value="{{ zone.id }}" {% if zone.id == purchase.zone.id %} selected {% endif %}> {{zone.location.name}} - {{ zone.name }}</option>
+                        <option value="{{ zone.id }}"> {{zone.location.name}} - {{ zone.name }}</option>
+                    {% else %}
+                        <option value="{{ zone.id }}" selected> {{zone.location.name}} - {{ zone.name }}</option>
                     {% endif %}
                 {% endfor %}
             </select>
@@ -38,7 +44,7 @@
                 }
                 start_loader();
                 $.ajax({
-                    url: "{% url 'add-stock' %}",
+                    url: "{% url 'broken' %}",
                     data: new FormData($(this)[0]),
                     cache: false,
                     contentType: false,

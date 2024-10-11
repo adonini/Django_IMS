@@ -9,18 +9,28 @@
             <h3 class="card-title dark-text fw-normal me-3">{{page_title}}</h4>
             {% if user|has_group:"admin" or user|has_group:"technician" %}
                 <div class="tools">
-                    <button type="button" class="btn btn-bg-dark rounded-xl btn-sm" id='add_new'><i class="fa fa-plus"></i> Add Stock</button>
+                    <button type="button" class="btn btn-bg-dark rounded-xl btn-sm" id='add_new'><i class="fa fa-plus"></i> Add Stock </button>
+                    <button type="button" class="btn selected rounded-xl btn-sm" id='move_more'><i class="fa fa-truck-ramp-box me-1"></i> Move More </button>
+                    <button type="button" class="btn selected rounded-xl btn-sm" id='use_more'><i class="fa fa-people-carry-box me-1"></i> Use More </button>
                 </div>
             {% endif %}
+            <div class="d-flex justify-content-center w-50">
+                <div class="itemViewSelector">
+                    <div class="leftSelector selected">Stock List</div>
+                    <div class="rightSelector">Stock Group</div>
+                </div>
+            </div>
         </div>
     </div>
     <div class="body">
+        <div class="table-container-list"> 
             <table class="table table-sm table-responsive table-hover" style="width:100%" id="stock-list"> {% comment %} display compact {% endcomment %}
                 <thead class="">
                     <tr class="">
                         <th class="text-center dark-text">#</th>
-                        <th class="text-center dark-text">Group</th>
-                        <th class="text-center dark-text">Code</th>
+                        <th class="text-center dark-text">Item</th>
+                        <th></th>
+                        <th class="text-center dark-text">Part Number</th>
                         <th class="text-center dark-text">Serial Number</th>
                         <th class="text-center dark-text">Producer</th>
                         <th class="text-center dark-text">Location</th>
@@ -31,19 +41,27 @@
                 <tbody>
                     {% for stock in stocks %}
                     <tr>
-                        <td class="align-canter text-center light-text">{{ forloop.counter }}</td>
-                        <td class="align-canter text-center light-text">{% if stock.item.group is not None %}{{ stock.item.group.name }}{% else %}{{stock.item.group}}{% endif %}</td>
-                        <td class="align-canter text-center light-text" >{% if stock.item.code is not None and stock.item.code != '' %}{{stock.item.code}}{% else %}{{stock.item.id}}{% endif %}</td>
-                        <td class="align-canter text-center light-text" >{% if stock.item.serial_number is not None and stock.item.serial_number != '' %}{{stock.item.serial_number}}{% else %} - {% endif %}</td>
-                        <td class="align-canter text-center light-text">{% if stock.item.producer is not None %}{{ stock.item.producer.name }}{% else %} - {% endif %}</td>
-                        <td class="align-canter text-center light-text">{% if stock.zone.location is not None %}{{ stock.zone.location.name }}{% else %} - {% endif %}</td>
-                        <td class="align-canter text-center light-text" id="{{stock.zone.id}}">{% if stock.zone is not None %}{{ stock.zone.name }}{% else %} - {% endif %}</td>
+                        <td class="text-center light-text">{{ forloop.counter }}</td>
+                        <td class="text-center light-text" id="{{stock.id}}">{% if stock.item.part_number.group is not None %}{{ stock.item.part_number.group.name }}{% else %}{{stock.item.part_number.group}}{% endif %}</td>
+                        <td class=""><div class="d-flex justify-content-center align-items-center oldPill {% if not stock.old %}hidden{% endif %}">
+                            <i class="fa fa-exclamation-triangle "></i>
+                        </div>
+                        <div class="d-flex justify-content-center align-items-center oldPill highlight-color pe-3 {% if not stock.item.status|lower == 'broken' %}hidden{% endif %}">
+                            <i class="fa fa-chain-broken "></i>
+                        </div></td>
+                        <td class="text-center light-text" >{% if stock.item.part_number.code is not None and stock.item.part_number.code != '' %}{{stock.item.part_number.code}}{% else %}{{stock.item.id}}{% endif %}</td>
+                        <td class="text-center light-text" >{% if stock.item.serial_number is not None and stock.item.serial_number != '' %}{{stock.item.serial_number}}{% else %} - {% endif %}</td>
+                        <td class="text-center light-text">{% if stock.item.producer is not None %}{{ stock.item.producer.name }}{% else %} - {% endif %}</td>
+                        <td class="text-center light-text">{% if stock.zone.location is not None %}{{ stock.zone.location.name }}{% else %} - {% endif %}</td>
+                        <td class="text-center light-text" id="{{stock.zone.id}}">{% if stock.zone is not None %}{{ stock.zone.name }}{% else %} - {% endif %}</td>
                         <td class="align-center text-center light-text d-flex flex-wrap justify-content-around">
                             <div>
                                 {% if user|has_group:"technician" or user|has_group:"admin" %}
-                                    <button type="button" class="btn selected rounded-xl btn-sm useBtn" data-id="{{ stock.pk }}" title="Use the item">
-                                        <i class="fa fa-box-open"></i> 
-                                    </button>
+                                   {% if stock.item.status.name != 'Broken' %}
+                                        <button type="button" class="btn selected rounded-xl btn-sm useBtn" data-id="{{ stock.pk }}" title="Use the item">
+                                            <i class="fa fa-box-open"></i> 
+                                        </button>
+                                    {% endif %}
                                 {% endif %}
                                 <button type="button" class="btn btn-bg-dark btn-sm stock-data {% if not user|has_group:'technician' and not user|has_group:'admin' %} widerIcon {% endif %}" data-id="{{ stock.pk }}" data-old="{{stock.old}}" title="Stock information">
                                     <i class="fa fa-info-circle"></i>
@@ -51,13 +69,19 @@
                             {% if user|has_group:"technician" or user|has_group:"admin" %}
                                 </div>
                                 <div class="mt-1">
-                                    <button class="btn btn-sm selected {% if not user|has_group:'admin' %} widerIcon {% endif %}" title="Move the stock">
+                                    <button class="btn btn-sm selected {% if not user|has_group:'admin' %} widerIcon {% endif %} move-stock" data-id="{{ stock.pk }}" title="Move the stock">
                                         <i class="fa fa-dolly"></i>
                                     </button>
                                     {% if user|has_group:"admin" %}
-                                        <button class="btn btn-sm highlight-color delBtn" id="{{stock.pk}}" title="Delete the stock">
-                                            <i class="fa fa-trash"></i>
-                                        </button>
+                                        {% if stock.old %}
+                                            <button class="btn btn-sm highlight-color delBtn" data-id="{{stock.pk}}" title="Delete the stock">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        {% else %}
+                                            <button class="btn btn-sm oldPill oldBtn" data-id="{{stock.pk}}" title="Mark as deprecated the stock">
+                                                <i class="fa fa-exclamation-triangle"></i>
+                                            </button>
+                                        {% endif %}
                                     {% endif %}
                             {% endif%}
                             </div>
@@ -66,6 +90,37 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+        <div class="table-container-detail" hidden>
+            <table class="table table-sm table-responsive table-hover" style="width:100%" id="stock-detail"> {% comment %} display compact {% endcomment %}
+                <thead class="">
+                    <tr class="">
+                        <th class="text-center dark-text">#</th>
+                        <th class="text-center dark-text">PBS Code</th>
+                        <th class="text-center dark-text">Item</th>
+                        <th class="text-center dark-text">Part Number</th>
+                        <th class="text-center dark-text">Stocked Items</th>
+                        <th class="text-center dark-text">Ordered Items</th>
+                        <th class="text-center dark-text">Minimum Stock Limit</th>
+                        <th class="text-center dark-text">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for element in allGroups %}
+                        <tr>
+                            <td class="align-canter text-center light-text">{{ forloop.counter }}</td>
+                            <td class="align-canter text-center light-text">{{element.group.PBS_code}}</td>
+                            <td class="align-canter text-center light-text">{{element.group.name}}</td>
+                            <td class="align-canter text-center light-text">{% if element.partNumber %}{{element.partNumber}}{% else %}-{% endif %}</td>
+                            <td class="align-canter text-center light-text">{{element.stock}}</td>
+                            <td class="align-canter text-center light-text">{{element.purchase}}</td>
+                            <td class="align-canter text-center light-text">{% if element.group.minimum_stock %}{{element.group.minimum_stock}}{% else %} - {% endif %}</td>
+                            <td><div class="badge {% if element.status == 'Critical' %}bCrit{% elif element.status == 'Low' %}bLow{% elif element.status == 'Ok' %}bOk{% else %}bError{% endif %}"><i class="fa {% if element.status == 'Critical' %}fa-triangle-exclamation{% elif element.status == 'Low' %}fa-circle-exclamation{% elif element.status == 'Ok' %}fa-check{% else %}fa-xmark{% endif %} me-2"></i>{{element.status}}</div></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock content %}
@@ -78,6 +133,9 @@
     let producers = {{ producers | safe }}
     let zones = {{ zones | safe }}
     let locations = {{ locations | safe }}
+    let generalData = []
+    let newSelectedTrs = []
+    let detail_statuses = ['Ok', 'Critical', 'Low', 'Error']
     $(function() {
         $('#add_new').click(function() {
             let headerDiv = document.createElement('div')
@@ -120,6 +178,272 @@
             })
             modalFooter.appendChild(createButton)
         })
+        $('#move_more').click(function() {
+            $('#uni_modal').modal('hide');
+            let div = document.createElement('div')
+            div.classList.add("cardHeader")
+            let title = document.createElement('h4')
+            title.classList.add('dark-text')
+            title.innerHTML = "Move More Stock"
+            let anchor = document.createElement('div')
+            let editIcon = document.createElement('i')
+            editIcon.classList.add('fa', 'fa-truck-ramp-box', 'me-1')
+            anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
+            anchor.addEventListener('click', (e)=>{
+                $('#uni_modal').modal('hide');
+                newSelectedTrs = []
+            })
+            let icon = document.createElement('i')
+            icon.classList.add('fa', 'fa-times')
+            let titleDiv = document.createElement('div')
+            titleDiv.classList.add('titleDiv')
+            titleDiv.appendChild(editIcon)
+            titleDiv.appendChild(title)
+            anchor.appendChild(icon)
+            div.appendChild(titleDiv)
+            div.appendChild(anchor)
+            let editUrl = '{% url "Movemore" %}'
+            setTimeout(()=>{console.log('switching modal'); uni_modal(div, editUrl, 'modal-md')}, 300)
+            let modalFooter = document.querySelector('.modal-footer')
+            modalFooter.innerHTML = ''
+            let saveButton = document.createElement('button')
+            saveButton.classList.add('btn', 'selected', 'edit')
+            let saveIcon = document.createElement('i')
+            saveIcon.classList.add('fa', 'fa-check')
+            saveButton.appendChild(saveIcon)
+            let savePar = document.createElement('p')
+            savePar.appendChild(document.createTextNode('Move All'))
+            saveButton.appendChild(savePar)
+            saveButton.addEventListener('click', (e)=>{
+                let zoneSelector = document.querySelector('#zone')
+                $('.err-msg').remove();
+                var el = $('<div>')
+                el.addClass("alert alert-danger err-msg")
+                el.hide()
+                start_loader();
+                $.ajax({
+                    url: "{% url 'Movemore' %}",
+                    headers: {'X-CSRFToken': "{{csrf_token}}"},
+                    data: {'zone': zoneSelector.value, 'items': newSelectedTrs},
+                    method: 'POST',
+                    dataType: 'json',
+                    error: err => {
+                        console.log(err)
+                        alert("An error occured ", 'error');
+                        end_loader();
+                    },
+                    success: function(resp) {
+                        if (typeof resp == 'object' && resp.status == 'success') {
+                            el.removeClass("alert alert-danger err-msg ")
+                            location.reload()
+                        } else if (resp.status == 'failed' && !!resp.msg) {
+                            el.html(resp.msg)
+                        } else {
+                            el.text("An error occured ", 'error');
+                            end_loader();
+                            console.err(resp)
+                        }
+                        _this.prepend(el)
+                        el.show('slow')
+                        $("html, body, .modal ").scrollTop(0);
+                        end_loader()
+                    }
+                })
+            })
+            modalFooter.appendChild(saveButton)
+            let originalData = $('#stock-list').DataTable().rows().nodes().toArray()
+            if(originalData.length > 0){
+                $('#uni_modal').on('shown.bs.modal', function() {
+                    let itemTable = null
+                    if (!$.fn.DataTable.isDataTable('#sumStock-list')) {
+                        itemTable = $('#sumStock-list').DataTable({
+                            initComplete: function(){
+                                let addAllBtn = document.createElement('div')
+                                addAllBtn.setAttribute('title', 'By clicking this button all the valid entries in the table will be selected')
+                                addAllBtn.classList.add('btn', 'selected', 'order-1')
+                                addAllBtn.appendChild(document.createTextNode('Add All'))
+                                let dtEnd = document.querySelector('.dt-end')
+                                dtEnd.classList.add('d-flex', 'align-item-center', 'justify-content-around')
+                                dtEnd.childNodes[0].classList.add('order-2', 'mt-0')
+                                addAllBtn.removeEventListener('click', (e)=>{
+                                    let visibleRows = itemTable.rows({ search: 'applied' }).nodes().toArray()
+                                    visibleRows.forEach(row=>{
+                                        if(!row.classList.contains('trSelected')){
+                                            row.click()
+                                        }
+                                    })
+                                })
+                                addAllBtn.addEventListener('click', (e)=>{
+                                    let visibleRows = itemTable.rows({ search: 'applied' }).nodes().toArray()
+                                    visibleRows.forEach(row=>{
+                                        if(!row.classList.contains('trSelected')){
+                                            row.click()
+                                        }
+                                    })
+                                })
+                                dtEnd.appendChild(addAllBtn)
+                            }
+                        })
+                        originalData.forEach(row=>{
+                            let newRow = row.cloneNode(true)
+                            newRow.removeChild(newRow.childNodes[5])
+                            newRow.removeChild(newRow.childNodes[8])
+                            newRow.removeChild(newRow.childNodes[9])
+                            newRow.removeChild(newRow.childNodes[14])
+                            itemTable.row.add(newRow)
+                        })
+                        itemTable.draw()
+                    }else{
+                        itemTable = $('#sumStock-list').DataTable()
+                    }
+                    let tableTrs = Array.from(itemTable.rows({ page: 'all' }).nodes())
+                    tableTrs.forEach(tr=>{
+                        tr.classList.add('cursor-pointer')
+                        let tds = tr.children
+                        let generalIds = generalData.map(element => element.item)
+                        if(generalIds.includes(tds[1].id)){
+                            tr.classList.add('trSelected')
+                        }
+                        tr.removeEventListener('click', handleTr)
+                        tr.addEventListener('click', handleTr)
+                    })
+                    $('.tableContainer').append(itemTable);
+                })
+            }
+        })
+        $('#use_more').click(function() {
+            $('#uni_modal').modal('hide');
+            let div = document.createElement('div')
+            div.classList.add("cardHeader")
+            let title = document.createElement('h4')
+            title.classList.add('dark-text')
+            title.innerHTML = "Use More Stock"
+            let anchor = document.createElement('div')
+            let editIcon = document.createElement('i')
+            editIcon.classList.add('fa', 'fa-people-carry-box', 'me-1')
+            anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
+            anchor.addEventListener('click', (e)=>{
+                $('#uni_modal').modal('hide');
+                newSelectedTrs = []
+            })
+            let icon = document.createElement('i')
+            icon.classList.add('fa', 'fa-times')
+            let titleDiv = document.createElement('div')
+            titleDiv.classList.add('titleDiv')
+            titleDiv.appendChild(editIcon)
+            titleDiv.appendChild(title)
+            anchor.appendChild(icon)
+            div.appendChild(titleDiv)
+            div.appendChild(anchor)
+            let editUrl = '{% url "Usemore" %}'
+            setTimeout(()=>{console.log('switching modal'); uni_modal(div, editUrl, 'modal-md')}, 300)
+            let modalFooter = document.querySelector('.modal-footer')
+            modalFooter.innerHTML = ''
+            let saveButton = document.createElement('button')
+            saveButton.classList.add('btn', 'selected', 'edit')
+            let saveIcon = document.createElement('i')
+            saveIcon.classList.add('fa', 'fa-check')
+            saveButton.appendChild(saveIcon)
+            let savePar = document.createElement('p')
+            savePar.appendChild(document.createTextNode('Use All'))
+            saveButton.appendChild(savePar)
+            saveButton.addEventListener('click', (e)=>{
+                let instalationSelector = document.querySelector('#telescope')
+                $('.err-msg').remove();
+                var el = $('<div>')
+                el.addClass("alert alert-danger err-msg")
+                el.hide()
+                start_loader();
+                $.ajax({
+                    url: "{% url 'Usemore' %}",
+                    headers: {'X-CSRFToken': "{{csrf_token}}"},
+                    data: {'place': instalationSelector.value, 'items': newSelectedTrs},
+                    method: 'POST',
+                    dataType: 'json',
+                    error: err => {
+                        console.log(err)
+                        alert("An error occured ", 'error');
+                        end_loader();
+                    },
+                    success: function(resp) {
+                        if (typeof resp == 'object' && resp.status == 'success') {
+                            el.removeClass("alert alert-danger err-msg ")
+                            location.reload()
+                        } else if (resp.status == 'failed' && !!resp.msg) {
+                            el.html(resp.msg)
+                        } else {
+                            el.text("An error occured ", 'error');
+                            end_loader();
+                            console.err(resp)
+                        }
+                        _this.prepend(el)
+                        el.show('slow')
+                        $("html, body, .modal ").scrollTop(0);
+                        end_loader()
+                    }
+                })
+            })
+            modalFooter.appendChild(saveButton)
+            let originalData = $('#stock-list').DataTable().rows().nodes().toArray()
+            if(originalData.length > 0){
+                $('#uni_modal').on('shown.bs.modal', function() {
+                    let itemTable = null
+                    if (!$.fn.DataTable.isDataTable('#sumStock-list')) {
+                        itemTable = $('#sumStock-list').DataTable({
+                            initComplete: function(){
+                                let addAllBtn = document.createElement('div')
+                                addAllBtn.setAttribute('title', 'By clicking this button all the valid entries in the table will be selected')
+                                addAllBtn.classList.add('btn', 'selected', 'order-1')
+                                addAllBtn.appendChild(document.createTextNode('Add All'))
+                                let dtEnd = document.querySelector('.dt-end')
+                                dtEnd.classList.add('d-flex', 'align-item-center', 'justify-content-around')
+                                dtEnd.childNodes[0].classList.add('order-2', 'mt-0')
+                                addAllBtn.removeEventListener('click', (e)=>{
+                                    let visibleRows = itemTable.rows({ search: 'applied' }).nodes().toArray()
+                                    visibleRows.forEach(row=>{
+                                        if(!row.classList.contains('trSelected')){
+                                            row.click()
+                                        }
+                                    })
+                                })
+                                addAllBtn.addEventListener('click', (e)=>{
+                                    let visibleRows = itemTable.rows({ search: 'applied' }).nodes().toArray()
+                                    visibleRows.forEach(row=>{
+                                        if(!row.classList.contains('trSelected')){
+                                            row.click()
+                                        }
+                                    })
+                                })
+                                dtEnd.appendChild(addAllBtn)
+                            }
+                        })
+                        originalData.forEach(row=>{
+                            let newRow = row.cloneNode(true)
+                            newRow.removeChild(newRow.childNodes[5])
+                            newRow.removeChild(newRow.childNodes[8])
+                            newRow.removeChild(newRow.childNodes[9])
+                            newRow.removeChild(newRow.childNodes[14])
+                            itemTable.row.add(newRow)
+                        })
+                        itemTable.draw()
+                    }else{
+                        itemTable = $('#sumStock-list').DataTable()
+                    }
+                    let tableTrs = Array.from(itemTable.rows({ page: 'all' }).nodes())
+                    tableTrs.forEach(tr=>{
+                        tr.classList.add('cursor-pointer')
+                        let tds = tr.children
+                        let generalIds = generalData.map(element => element.item)
+                        if(generalIds.includes(tds[1].id)){
+                            tr.classList.add('trSelected')
+                        }
+                        tr.removeEventListener('click', handleTr)
+                        tr.addEventListener('click', handleTr)
+                    })
+                    $('.tableContainer').append(itemTable);
+                })
+            }
+        })
         $(document).on('click', '.useBtn', function(e) {
             let id = e.target.dataset.id
             let headerDiv = document.createElement('div')
@@ -128,7 +452,7 @@
             title.classList.add('dark-text')
             title.innerHTML = "Use Item"
             let addIcon = document.createElement('i')
-            addIcon.classList.add('fa', 'fa-box-open')
+            addIcon.classList.add('fa', 'fa-box-open', 'me-2')
             let anchor = document.createElement('div')
             let titleDiv = document.createElement('div')
             titleDiv.classList.add('titleDiv')
@@ -169,6 +493,11 @@
             })
             modalFooter.appendChild(createButton)
         })
+        $('.move-stock').on('click', function(e){
+            let id = e.target.dataset.id
+            let modalFooter = document.querySelector('.modal-footer')
+            edit_data(id, modalFooter, true)
+        })
         $(document).on('click', '.stock-data', function(e) {
             let id = e.target.dataset.id
             let old = e.target.dataset.old
@@ -201,172 +530,46 @@
                 editPar.appendChild(document.createTextNode('Move'))
                 editButton.appendChild(editPar)
                 editButton.addEventListener('click', ()=>{
-                    $('#uni_modal').modal('hide');
-                    let div = document.createElement('div')
-                    div.classList.add("cardHeader")
-                    let title = document.createElement('h4')
-                    title.classList.add('dark-text')
-                    title.innerHTML = "Move Stock"
-                    let anchor = document.createElement('div')
-                    let editIcon = document.createElement('i')
-                    editIcon.classList.add('fa', 'fa-edit')
-                    anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
-                    anchor.addEventListener('click', (e)=>{
-                        $('#uni_modal').modal('hide');
-                        setTimeout(()=>{
-                            uni_modal(headerDiv, finalUrl, 'modal-md')
-                            modalFooter.innerHTML = ''
-                            modalFooter.appendChild(editButton)
-                            modalFooter.appendChild(oldButton)
-                        }, 300)
-                    })
-                    let icon = document.createElement('i')
-                    icon.classList.add('fa', 'fa-arrow-left')
-                    let titleDiv = document.createElement('div')
-                    titleDiv.classList.add('titleDiv')
-                    titleDiv.appendChild(editIcon)
-                    titleDiv.appendChild(title)
-                    anchor.appendChild(icon)
-                    div.appendChild(titleDiv)
-                    div.appendChild(anchor)
-                    let editUrl = '{% url "manage-stock-pk" 0 %}'
-                    let finalEditUrl = editUrl.replace('0', id);
-                    setTimeout(()=>{console.log('switching modal'); uni_modal(div, finalEditUrl, 'modal-md')}, 300)
-                    modalFooter.innerHTML = ''
-                    let saveButton = document.createElement('button')
-                    saveButton.classList.add('btn', 'selected', 'edit')
-                    let saveIcon = document.createElement('i')
-                    saveIcon.classList.add('fa', 'fa-check')
-                    saveButton.appendChild(saveIcon)
-                    let savePar = document.createElement('p')
-                    savePar.appendChild(document.createTextNode('Move'))
-                    saveButton.appendChild(savePar)
-                    saveButton.addEventListener('click', (e)=>{
-                        $('#uni_modal form').submit()
-                    })
-                    modalFooter.appendChild(saveButton)
+                    edit_data(id, modalFooter, false, headerDiv, finalUrl, editButton, oldButton)
                 })
                 if(modalFooter.classList.contains('hidden')){
                     modalFooter.classList.remove('hidden')
                 }
                 let oldButton = document.createElement('button')
                 if (old == 'False'){
-                    oldButton.classList.add('btn', 'highlight-color', 'edit')
+                    oldButton.classList.add('btn', 'oldPill', 'edit')
                     oldButton.id = id
                     let oldIcon = document.createElement('i')
                     oldIcon.classList.add('fa', 'fa-warning')
                     oldButton.appendChild(oldIcon)
                     let oldPar = document.createElement('p')
-                    oldPar.appendChild(document.createTextNode('Mark as old'))
+                    oldPar.appendChild(document.createTextNode('Mark as deprecated'))
                     oldButton.appendChild(oldPar)
                     oldButton.addEventListener('click', (e)=>{
-                        var el = $('<div>')
-                        el.addClass("alert alert-danger err-msg")
-                        el.hide()
-                        $.ajax({
-                            url: '{% url "mark-stock-old" %}',
-                            headers: {'X-CSRFToken': "{{csrf_token}}"},
-                            method: 'POST',
-                            data: {"id": id},
-                            dataType: 'json',
-                            error: err => {
-                                el.text('An error occurred.')
-                                el.show('slow')
-                                end_loader()
-                            },
-                            success: function(resp) {
-                                if (resp.status == 'success') {
-                                    let oldPill = document.querySelector('.oldPill')
-                                    if (oldPill.classList.contains('hidden')){
-                                        oldPill.classList.remove('hidden')
-                                    }
-                                    oldButton.classList.add('btn', 'highlight-color', 'edit')
-                                    oldButton.innerHTML = ''
-                                    oldButton.id = id
-                                    let oldIcon = document.createElement('i')
-                                    oldIcon.classList.add('fa', 'fa-trash')
-                                    oldButton.appendChild(oldIcon)
-                                    let oldPar = document.createElement('p')
-                                    oldPar.appendChild(document.createTextNode('Delete'))
-                                    oldButton.appendChild(oldPar)
-                                    oldButton.addEventListener('click', (e)=>{
-                                        var el = $('<div>')
-                                        el.addClass("alert alert-danger err-msg")
-                                        el.hide()
-                                        $.ajax({
-                                            url: '{% url "delete-stock" %}',
-                                            headers: {'X-CSRFToken': "{{csrf_token}}"},
-                                            method: 'POST',
-                                            data: {"id": id},
-                                            dataType: 'json',
-                                            error: err => {
-                                                el.text('An error occurred.')
-                                                el.show('slow')
-                                                end_loader()
-                                            },
-                                            success: function(resp) {
-                                            if (resp.status == 'success') {
-                                                location.reload()
-                                            } else if (!!resp.msg) {
-                                                el.text('An error occurred.')
-                                                el.show('slow')
-                                            } else {
-                                                el.text('An error occurred.')
-                                                el.show('slow')
-                                            }
-                                            end_loader()
-                                            }
-                                        })
-                                    })
-                                } else if (!!resp.msg) {
-                                    el.text('An error occurred.')
-                                    el.show('slow')
-                                } else {
-                                    el.text('An error occurred.')
-                                    el.show('slow')
-                                }
-                                end_loader()
-                            }
-                        })
+                        let modal = document.querySelector('#uni_modal')
+                        modal.style.zIndex = 'auto'
+                        _conf("Do you want to mark this Item as deprecated?", "mark_as_old", [id])
+                        let deleteButton = document.querySelector('#confirm_modal #confirm')
+                        deleteButton.innerHTML = 'Confirm'
                     })
                 }else{
-                    oldButton.classList.add('btn', 'highlight-color', 'edit')
-                    oldButton.id = id
-                    let oldIcon = document.createElement('i')
-                    oldIcon.classList.add('fa', 'fa-trash')
-                    oldButton.appendChild(oldIcon)
-                    let oldPar = document.createElement('p')
-                    oldPar.appendChild(document.createTextNode('Delete'))
-                    oldButton.appendChild(oldPar)
-                    oldButton.addEventListener('click', (e)=>{
-                        var el = $('<div>')
-                        el.addClass("alert alert-danger err-msg")
-                        el.hide()
-                        $.ajax({
-                            url: '{% url "delete-stock" %}',
-                            headers: {'X-CSRFToken': "{{csrf_token}}"},
-                            method: 'POST',
-                            data: {"id": id},
-                            dataType: 'json',
-                            error: err => {
-                                el.text('An error occurred.')
-                                el.show('slow')
-                                end_loader()
-                            },
-                            success: function(resp) {
-                                if (resp.status == 'success') {
-                                    location.reload()
-                                } else if (!!resp.msg) {
-                                    el.text('An error occurred.')
-                                    el.show('slow')
-                                } else {
-                                    el.text('An error occurred.')
-                                    el.show('slow')
-                                }
-                                end_loader()
-                            }
+                    {% if user|has_group:"admin" %}
+                        oldButton.classList.add('btn', 'highlight-color', 'edit')
+                        oldButton.id = id
+                        let oldIcon = document.createElement('i')
+                        oldIcon.classList.add('fa', 'fa-trash')
+                        oldButton.appendChild(oldIcon)
+                        let oldPar = document.createElement('p')
+                        oldPar.appendChild(document.createTextNode('Delete'))
+                        oldButton.appendChild(oldPar)
+                        oldButton.addEventListener('click', (e)=>{
+                            let modal = document.querySelector('#uni_modal')
+                            modal.style.zIndex = 'auto'
+                            _conf("Do you want to delete this Stock entry?", "delete_item", [id])
                         })
-                    })
+                    {% else %}
+                        old = null
+                    {% endif %}
                 }
                 modalFooter.innerHTML = ''
                 modalFooter.appendChild(editButton)
@@ -379,7 +582,85 @@
                 }
             {% endif %}
         });
+        const edit_data = (id, modalFooter, small=false, headerDiv, finalUrl, editButton, oldButton)=>{
+            $('#uni_modal').modal('hide');
+            let div = document.createElement('div')
+            div.classList.add("cardHeader")
+            let title = document.createElement('h4')
+            title.classList.add('dark-text')
+            title.innerHTML = "Move Stock"
+            let anchor = document.createElement('div')
+            let editIcon = document.createElement('i')
+            editIcon.classList.add('fa', 'fa-edit')
+            anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
+            let icon = document.createElement('i')
+            if(!small){
+                anchor.addEventListener('click', (e)=>{
+                    $('#uni_modal').modal('hide');
+                    setTimeout(()=>{
+                        uni_modal(headerDiv, finalUrl, 'modal-md')
+                        modalFooter.innerHTML = ''
+                        modalFooter.appendChild(editButton)
+                        modalFooter.appendChild(oldButton)
+                    }, 300)
+                })
+                icon.classList.add('fa', 'fa-arrow-left')
+            }else{
+                icon.classList.add('fa', 'fa-times')
+                anchor.addEventListener('click', (e)=>{
+                    $('#uni_modal').modal('hide');
+                })
+            }
+            let titleDiv = document.createElement('div')
+            titleDiv.classList.add('titleDiv')
+            titleDiv.appendChild(editIcon)
+            titleDiv.appendChild(title)
+            anchor.appendChild(icon)
+            div.appendChild(titleDiv)
+            div.appendChild(anchor)
+            let editUrl = '{% url "manage-stock-pk" 0 %}'
+            let finalEditUrl = editUrl.replace('0', id);
+            setTimeout(()=>{console.log('switching modal'); uni_modal(div, finalEditUrl, 'modal-md')}, 300)
+            modalFooter.innerHTML = ''
+            let saveButton = document.createElement('button')
+            saveButton.classList.add('btn', 'selected', 'edit')
+            let saveIcon = document.createElement('i')
+            saveIcon.classList.add('fa', 'fa-check')
+            saveButton.appendChild(saveIcon)
+            let savePar = document.createElement('p')
+            savePar.appendChild(document.createTextNode('Move'))
+            saveButton.appendChild(savePar)
+            saveButton.addEventListener('click', (e)=>{
+                $('#uni_modal form').submit()
+            })
+            modalFooter.appendChild(saveButton)
+        }
 
+        $(document).on('click', '.oldBtn', function(e) {
+            let id = e.target.dataset.id
+            let modal = document.querySelector('#uni_modal')
+            modal.style.zIndex = 'auto'
+            _conf("Do you want to mark this Item as deprecated?", "mark_as_old", [id])
+            let confirmButton = document.querySelector('#confirm_modal #confirm')
+            if(confirmButton.classList.contains('highlight-color')){
+                confirmButton.classList.remove('highlight-color')
+                confirmButton.classList.add('selected')
+                confirmButton.innerHTML = 'Confirm'
+            }
+            let closeButton = document.querySelector('#confirm_modal #close')
+            if(closeButton.classList.contains('selected')){
+                closeButton.classList.remove('selected')
+                closeButton.classList.add('highlight-color')
+            }
+        })
+
+        $(document).on('click', '.delBtn', function(e) {
+            let id = e.target.dataset.id
+            let modal = document.querySelector('#uni_modal')
+            modal.style.zIndex = 'auto'
+            _conf("Do you want to delete this Stock entry?", "delete_item", [id])
+        })
+        
         //remove the default 'Search' text for all DataTable search boxes
         $.extend(true, $.fn.dataTable.defaults, {
             language: {
@@ -391,45 +672,50 @@
             buttons: [{
                 extend: 'copy',
                 exportOptions: {
-                    columns: ':not(:eq(7))'
+                    columns: ':not(:eq(8))'
                 }
             },
             {
                 extend: 'csv',
                 exportOptions: {
-                    columns: ':not(:eq(7))'
+                    columns: ':not(:eq(8))'
                 }
             },
             {
                 extend: 'excel',
                 exportOptions: {
-                    columns: ':not(:eq(7))'
+                    columns: ':not(:eq(8))'
                 }
             },
             {
                 extend: 'print',
                 exportOptions: {
-                    columns: ':not(:eq(7))'
+                    columns: ':not(:eq(8))'
                 }
             }],
             columnDefs: [
-                {orderable: false, targets: [0,4,6,7]},
+                {orderable: false, targets: [2,5,7,8]},
                 {targets: [4,6], 
                     render: function(data, type, row) {
                         return '<div class="text-truncate" style="max-width: 100px;">' + data + '</div>';
                     }
                 }
             ],
-            order: [[1, 'asc']],
+            drawCallback: function(settings) {
+                var api = this.api();
+                api.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
+                    var data = this.data();
+                    $('td:eq(0)', this.node()).html(rowLoop + 1);
+                });
+            },
+            //order: [[1, 'asc']],
         });
         let data = table.data().toArray()
-        let filterLabels = ['Group: ', 'Producer: ', 'Location: ', 'Zone: ']
+        let filterLabels = ['Item: ', 'Producer: ', 'Location: ', 'Zone: ']
         let mainDiv = document.querySelector('.top1Start')
         let generalDiv = document.createElement('div')
         let input = null
-        mainDiv.classList.add('filters')
-        
-
+        mainDiv.classList.add('filters')        
         for (let labelIndex in filterLabels){
             let intIndex = parseInt(labelIndex)+1
             let label = filterLabels[labelIndex]
@@ -442,7 +728,7 @@
             input.appendChild(defaultOption)
             let parsedLabel = label.replace(': ', '')
             input.setAttribute('id', parsedLabel)
-            if(parsedLabel.toLowerCase().includes('gro')){
+            if(parsedLabel.toLowerCase().includes('ite')){
                 input.addEventListener('change', (e)=>{
                     if (e.target.options[e.target.selectedIndex].text != 'All'){
                         table.column(1).search(e.target.options[e.target.selectedIndex].text).draw();
@@ -459,9 +745,9 @@
             }else if (parsedLabel.toLowerCase().includes('pro')){
                 input.addEventListener('change', (e)=>{
                     if (e.target.options[e.target.selectedIndex].text != 'All'){
-                        table.column(3).search(e.target.options[e.target.selectedIndex].text).draw();
+                        table.column(5).search(e.target.options[e.target.selectedIndex].text).draw();
                     }else{
-                        table.columns(3).search('').draw();
+                        table.columns(5).search('').draw();
                     }
                 })
                 for (index in producers){
@@ -473,9 +759,9 @@
             }else if(parsedLabel.toLowerCase().includes('loc')){
                 input.addEventListener('change', (e)=>{
                     if (e.target.options[e.target.selectedIndex].text != 'All'){
-                        table.column(4).search(e.target.options[e.target.selectedIndex].text).draw();
+                        table.column(6).search(e.target.options[e.target.selectedIndex].text).draw();
                     }else{
-                        table.columns(4).search('').draw();
+                        table.columns(6).search('').draw();
                     }
                 })
                 for (index in locations){
@@ -487,9 +773,17 @@
             }else if(parsedLabel.toLowerCase().includes('zon')){
                 input.addEventListener('change', (e)=>{
                     if (e.target.options[e.target.selectedIndex].text != 'All'){
-                        table.draw()
+                        let textParts = e.target.options[e.target.selectedIndex].text.split(' - ')
+                        table.column(6).search(textParts[0]).draw();
+                        table.column(7).search(textParts[1]).draw();
                     }else{
-                        table.columns(5).search('').draw();
+                        let locationInput = document.querySelector('#Location')
+                        if (locationInput.options[locationInput.selectedIndex].text != 'All'){
+                            table.columns(6).search(locationInput.options[locationInput.selectedIndex].text).draw();
+                        }else{
+                            table.columns(6).search('').draw();
+                        }
+                        table.columns(7).search('').draw();
                     }
                 })
                 for (index in zones){
@@ -512,22 +806,45 @@
                 generalDiv = document.createElement('div')
             }
         }
-        $.fn.dataTable.ext.search.push(
-            function(settings, data, dataIndex) {
-                let selectedValue = document.querySelector('#Zone').value
-                let cellId = table.cell(dataIndex, 5).node().id; 
-
-                    if (selectedValue === 'All' || selectedValue === cellId) {
-                        return true; 
+        let tableDetail = $('#stock-detail').DataTable({
+            dom: '<"top1"<"top1Start"><"top1End"Bf>>t<"bottom"<"bottomStart"i><"bottomCenter"l><"bottomEnd"p>>',
+            buttons: [{
+                extend: 'copy',
+            },
+            {
+                extend: 'csv',
+            },
+            {
+                extend: 'excel',
+            },
+            {
+                extend: 'print',
+            }],
+            columnDefs: [
+                {orderable: false, targets: [0,2,3]},
+                {
+                    targets: 0,
+                    serchable: false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
                     }
-                    return false;
-            }
-        );
-
-        table.draw();
+                },
+            ],
+            //This is the function that updates the numbering when filter is applied
+            drawCallback: function(settings) {
+                var api = this.api();
+                api.rows({ page: 'current' }).every(function (rowIdx, tableLoop, rowLoop) {
+                    var data = this.data();
+                    $('td:eq(0)', this.node()).html(rowLoop + 1);
+                });
+            },
+            order: [[1, 'asc']],
+        });
+        tableDetail.draw();
         //custom format of Search boxes
         $('[type=search]').each(function () {
             $(this).attr("placeholder", "Search...");
+            $(this).attr("autocomplete", "off");
             $(this).before('<span class="fa fa-search"></span>');
         });
         let top1End = document.querySelector('.top1End')
@@ -541,11 +858,142 @@
                 input.selectedIndex = 0
                 input.dispatchEvent(event);
             })
+            table.search('').draw();
         })
         top1End.appendChild(clearFilterButton)
+        let rightSelector = document.querySelector('.rightSelector')
+        let leftSelector = document.querySelector('.leftSelector')
+        let tableContainerList = document.querySelector('.table-container-list')
+        let tableContainerDetail = document.querySelector('.table-container-detail')
+        console.log(tableContainerDetail)
+        rightSelector.addEventListener('click', (e)=>{
+            if(!e.target.classList.contains('selected')){
+                e.target.classList.add('selected')
+            }
+            if(leftSelector.classList.contains('selected')){
+                leftSelector.classList.remove('selected')
+            }
+            if(tableContainerDetail.hasAttribute('hidden')){
+                tableContainerDetail.removeAttribute('hidden')
+            }
+            if(!tableContainerList.hasAttribute('hidden')){
+                tableContainerList.setAttribute('hidden', '')
+            }
+            let filterLabels = ['Status: ']
+            let mainDiv = document.querySelector('.table-container-detail .top1Start')
+            console.log(mainDiv)
+            if (mainDiv.childNodes.length == 0){
+                let table  = $('#stock-detail').DataTable()
+                let generalDiv = document.createElement('div')
+                let input = null
+                mainDiv.classList.add('filters')
+                for (let labelIndex in filterLabels){
+                    let intIndex = parseInt(labelIndex)+1
+                    let label = filterLabels[labelIndex]
+                    let divInput = document.createElement('div')
+                    divInput.classList.add('filterInput')
+                    input = document.createElement('select')
+                    input.classList.add('rounded-pill')
+                    defaultOption = document.createElement('option')
+                    defaultOption.appendChild(document.createTextNode('All'))
+                    input.appendChild(defaultOption)
+                    let parsedLabel = label.replace(': ', '')
+                    input.setAttribute('id', parsedLabel)
+                    if(parsedLabel.toLowerCase().includes('tus')){
+                        input.addEventListener('change', (e)=>{
+                            if (e.target.options[e.target.selectedIndex].text != 'All'){
+                                table.column(7).search(e.target.options[e.target.selectedIndex].text).draw();
+                            }else{
+                                table.columns(7).search('').draw();
+                            }
+                        })
+                        for (index in detail_statuses){
+                            let option = document.createElement('option')
+                            option.setAttribute('value', index)
+                            if(detail_statuses[index] == {% if source %}'{{source}}'{% else %}'No-source'{% endif %}){
+                                option.setAttribute('selected', '')
+                            }
+                            option .appendChild(document.createTextNode(detail_statuses[index]))
+                            input.appendChild(option)
+                        }
+                    }
+                    let inputLabel = document.createElement('label')
+                    inputLabel.appendChild(document.createTextNode(label))
+                    inputLabel.setAttribute('for', parsedLabel)
+                    divInput.appendChild(inputLabel)
+                    divInput.appendChild(input)
+                    generalDiv.appendChild(divInput)
+                    mainDiv.appendChild(generalDiv)
+                let top1End = document.querySelector('.table-container-detail .top1End')
+                let clearFilterButton = document.createElement('div')
+                clearFilterButton.classList.add('btn', 'btn-clear', 'rounded-xl')
+                clearFilterButton.appendChild(document.createTextNode('Clear filters'))
+                clearFilterButton.addEventListener('click', ()=>{
+                    let inputs = document.querySelectorAll('.filterInput>select')
+                    inputs.forEach(input =>{
+                        let event = new Event('change');
+                        input.selectedIndex = 0
+                        input.dispatchEvent(event);
+                    })
+                    table.search('').draw();
+                })
+                top1End.appendChild(clearFilterButton)
+                }
+            }
+        })
+        leftSelector.addEventListener('click', (e)=>{
+            if(!e.target.classList.contains('selected')){
+                e.target.classList.add('selected')
+            }
+            if(rightSelector.classList.contains('selected')){
+                rightSelector.classList.remove('selected')
+            }
+            if(tableContainerList.hasAttribute('hidden')){
+                tableContainerList.removeAttribute('hidden')
+            }
+            if(!tableContainerDetail.hasAttribute('hidden')){
+                tableContainerDetail.setAttribute('hidden', '')
+            }
+        })
+        if({% if source %}true{% else%}false{% endif %}){
+            let detailButton = document.querySelector('.rightSelector')
+            detailButton.click()
+            let statusSelector = document.querySelector('#Status')
+            tableDetail.column(7).search(statusSelector.options[statusSelector.selectedIndex].text).draw();
+        }
     })
 
-    function delete_item($id) {
+    function mark_as_old(id){
+        var el = $('<div>')
+        el.addClass("alert alert-danger err-msg")
+        el.hide()
+        $.ajax({
+            url: '{% url "mark-stock-old" %}',
+            headers: {'X-CSRFToken': "{{csrf_token}}"},
+            method: 'POST',
+            data: {"id": id},
+            dataType: 'json',
+            error: err => {
+                el.text('An error occurred.')
+                el.show('slow')
+                end_loader()
+            },
+            success: function(resp) {
+                if (resp.status == 'success') {
+                    location.reload()
+                } else if (!!resp.msg) {
+                    el.text('An error occurred.')
+                    el.show('slow')
+                } else {
+                    el.text('An error occurred.')
+                    el.show('slow')
+                }
+                end_loader()
+            }
+        })
+    }
+
+    function delete_item(id) {
         start_loader();
         var _this = $(this)
         $('.err-msg').remove();
@@ -553,10 +1001,10 @@
         el.addClass("alert alert-danger err-msg")
         el.hide()
         $.ajax({
-            url: '{% url "delete-item" %}',
+            url: '{% url "delete-stock" %}',
             headers: {'X-CSRFToken': "{{csrf_token}}"},
             method: 'POST',
-            data: {id: $id},
+            data: {id: id},
             dataType: 'json',
             error: err => {
                 console.log(err)
@@ -577,6 +1025,24 @@
                 end_loader()
             }
         })
+    }
+
+    const handleTr = (e)=>{
+        let tds = e.currentTarget.children
+        let newRow = {}
+        newRow = {'item': tds[1].id}
+        let index = newSelectedTrs.findIndex(element => element.item === newRow.item)
+        if (index != -1){
+            newSelectedTrs.splice(index, 1)
+            if(e.currentTarget.classList.contains('trSelected')){
+                e.currentTarget.classList.remove('trSelected')
+            }
+        }else{
+            newSelectedTrs.push(newRow)
+            if(!e.currentTarget.classList.contains('trSelected')){
+                e.currentTarget.classList.add('trSelected')
+            }
+        }
     }
 </script>
 {% endblock ScriptBlock %}

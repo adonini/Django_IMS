@@ -37,7 +37,7 @@
         {% for purchase in purchases %}
             <tr>
                 <td class="align-canter text-center light-text">{{ forloop.counter }}</td>
-                <td class="align-canter text-center light-text" id="{{purchase.item.id}}">{{purchase.item.group.name}}</td>
+                <td class="align-canter text-center light-text" id="{{purchase.item.id}}">{{purchase.item.part_number.group.name}} - {{purchase.item.id}}</td>
                 <td class="align-canter text-center light-text">{{purchase.price_per_item}}</td>
                 {% if user|has_group:"admin" or user|has_group:"technician" %}
                     {% if purchase_group.status.name|lower != 'received' %}

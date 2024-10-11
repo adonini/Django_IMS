@@ -7,14 +7,20 @@
 </div> {% endcomment %}
 <div class="container-fluid">
     <p class="alert hidden"></p>
-    <h3 class="text-center">Item List</h3>
-    <p class="light-text text-center gap-1">Select the items by clicking on them. <br> <span class="highlight">NOTE: Specify a price to be able to select the items.</span></p>
+    <div class="d-flex w-100 justify-content-center align-items-center">
+        <h3 class="text-center">Item List</h3>
+        <div class="ms-2 rounded-circle d-flex justify-content-center align-items-center infoBorder">
+            <i class="fa fa-info d-flex justify-content-center align-items-center pe-none"></i>
+        </div>
+    </div>
+    <p class="light-text text-center gap-1 border rounded p-1 position-absolute z-2 bg-white info" hidden>Select the items by <strong>clicking</strong> on them. <br> Select all with the "Add all" button. You can <strong>filter</strong> by typing any word before selecting all. <strong>Only the results will be selected then.</strong><br> <span class="highlight">NOTE: Specify a price to be able to select the items.</span>NOTE: If you use the "Add All" button the <strong>set price will be applied to all</strong> the items missing a price value.</p>
     <table class="table table-sm table-responsive table-hover" style="width:100%" id="item-list"> {% comment %} display compact {% endcomment %}
         <thead class="">
             <tr class="align-center">
                 <th class="text-center dark-text">#</th>
-                <th class="text-center dark-text">Group</th>
-                <th class="text-center dark-text">Code</th>
+                <th class="text-center dark-text">Item</th>
+                <th class="text-center dark-text">Part Number</th>
+                <th class="text-center dark-text">Model</th>
                 <th class="text-center dark-text">Price</th>
             </tr>
         </thead>
@@ -22,8 +28,9 @@
             {% for item in items %}
             <tr>
                 <td class="align-center text-center light-text">{{ forloop.counter }}</td>
-                <td class="align-center text-center light-text" id="{{item.id}}">{% if item.group is not None %}{{ item.group.name }}{% else %}{{item.group}}{% endif %}</td>
-                <td class="align-center text-center light-text" >{% if item.code is not None and item.code != '' %}{{item.code}}{% elif item.serial_number is not None and item.serial_number != '' %}{{item.serial_number}}{% else %}{{item.id}}{% endif %}</td>
+                <td class="align-center text-center light-text" id="{{item.id}}">{% if item.part_number.group is not None %}{{ item.part_number.group.name }}{% else %}{{item.part_number.group}}{% endif %}</td>
+                <td class="align-center text-center light-text" >{% if item.part_number.code is not None and item.code != '' %}{{item.part_number.code}}{% elif item.serial_number is not None and item.serial_number != '' %}{{item.serial_number}}{% else %}{{item.id}}{% endif %}</td>
+                <td class="align-center text-center light-text">{% if item.model %}{{item.model}}{% else %} - {% endif %}</td>
                 {% if item.price is not None %}<td class="align-center text-center light-text">{% if item.price is not None and item.price != "" %}{{ item.price }}{% else %}{{ item.price }}{% endif %}</td>{% else %}<td class="align-center text-center light-text"><input type="text" id="price" class="w-75"></td> {% endif %}
                 <!--| intcomma-->
             </tr>
@@ -32,4 +39,16 @@
     </table>
 </div>
 <script>
+    infoButton = document.querySelector('.infoBorder')
+    infoDiv = document.querySelector('.info')
+    infoButton.addEventListener('mouseover', ()=>{
+        if(infoDiv.hasAttribute('hidden')){
+            infoDiv.removeAttribute('hidden')
+        }
+    })
+    infoButton.addEventListener('mouseout', ()=>{
+        if(!infoDiv.hasAttribute('hidden')){
+            infoDiv.setAttribute('hidden', '')
+        }
+    })
 </script>
