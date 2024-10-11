@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
-from .models import Item, Category, Stock, Producer, Stock_Type, Group, Item_status, Telescope, Zone, Purchase_status, Purchase_group, Purchase, Payment_sources, Supplier, Telescope_structure
+from .models import Item, Category, Stock, Producer, Stock_Type, Group, Item_status, Telescope, Zone, Purchase_status, Purchase_group, Purchase, Payment_sources, Supplier, Telescope_structure, PartNumber
 
 
 class UserRegisterForm(UserCreationForm):
@@ -13,8 +13,8 @@ class UserRegisterForm(UserCreationForm):
 
 
 class AddItemForm(forms.ModelForm):
-    group = forms.ModelChoiceField(queryset=Group.objects.all(), initial=0, required=False)
-    code = forms.CharField(required=False)
+    group = forms.ModelChoiceField(queryset=Group.objects.all(), initial=0, required=True)
+    part_number = forms.CharField(required=True)
     serial_number = forms.CharField(required=False)
     price = forms.DecimalField(required=False, max_digits=10, decimal_places=2)
     producer = forms.ModelChoiceField(queryset=Producer.objects.all(), initial=0, required=False)  # to give the choice between already existing categories
@@ -27,7 +27,22 @@ class AddItemForm(forms.ModelForm):
 
     class Meta:
         model = Item
-        fields = ['group', 'code', 'serial_number', 'price', 'producer', 'expiration_date', 'model', 'datasheet_url', 'status', 'telescope', 'quantity']
+        fields = ['group', 'part_number', 'serial_number', 'price', 'producer', 'expiration_date', 'model', 'datasheet_url', 'status', 'telescope', 'quantity']
+
+    def clean_part_number(self):
+        part_number_input = self.cleaned_data['part_number']
+        if isinstance(part_number_input, PartNumber):
+            return part_number_input
+        group=self.cleaned_data['group']
+        part_number_instance, created = PartNumber.objects.get_or_create(code=part_number_input, group=group)
+        return part_number_instance
+    
+    def save(self, commit=True):
+        instance = super(AddItemForm, self).save(commit=False)
+        instance.part_number = self.cleaned_data['part_number']
+        if commit:
+            instance.save()
+        return instance
 
     # Here the code looks for an existing code same as the one inserted - celan_{field} is a django system to execute extra validations on some fields.
 #    def clean_code(self):

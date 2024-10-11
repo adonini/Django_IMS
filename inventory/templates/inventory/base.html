@@ -144,9 +144,12 @@
 
         window._conf = function($msg = '', $func = '', $params = []) {
             let modal = document.querySelector('#uni_modal')
-            $('#confirm_modal #confirm').attr('onclick', $func + "(" + $params.join(',') + ")")
             $('#confirm_modal .modal-body').html($msg)
             $('#confirm_modal').modal('show')
+            $('#confirm_modal #confirm').off('click')
+            $('#confirm_modal #confirm').on('click', function() {
+                window[$func](...$params);
+            })
             $('#confirm_modal #close').on('click', function(){
                 modal.style.zIndex = ""
             })

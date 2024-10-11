@@ -6,7 +6,7 @@
 <div class="container-fluid">
     <div class="header">
         <div class="d-flex align-items-center w-100">
-            <h3 class="card-title dark-text fw-normal me-3">{{page_title}}</h4>
+            <h4 class="card-title dark-text fw-normal me-3">{{page_title}}</h4>
             {% if user|has_group:"admin" or user|has_group:"technician" %}
                 <div class="tools">
                     <button type="button" class="btn btn-bg-dark rounded-xl btn-sm" id='add_new'><i class="fa fa-plus"></i> New Purchase</button>
@@ -44,18 +44,20 @@
                     <td class="align-center text-center light-text">
                         <div class="d-flex justify-content-center">
                             {% if user|has_group:"technician" or user|has_group:"admin" %}
-                                <button class="btn btn-bg-dark modalButton edit receivePurchase {% if not user|has_group:'admin' %} widerIcon {% endif %}" data-id="49" title="Receive purchase"><i class="fa fa-boxes-stacked"></i><i class="fa fa-arrow-right"></i></button>
+                                {% if purchase.status.name|lower != 'received' %}
+                                    <button class="btn btn-bg-dark modalButton edit receivePurchase {% if not user|has_group:'admin' %} widerIcon {% endif %}" data-id="{{purchase.id}}" title="Receive purchase"><i class="fa fa-boxes-stacked"></i><i class="fa fa-arrow-right"></i></button>
+                                {% endif %}
                                 </div>
                                 <div class="mt-1">
-                                    <button class="btn btn-sm selected" id="{{purchase.pk}}" title="Edit purchase">
+                                    <button class="btn btn-sm selected editBtn" data-id="{{purchase.pk}}" title="Edit purchase">
                                         <i class="fa fa-edit"></i>
                                     </button>
                             {% endif %}
                             <button type="button" class="btn btn-bg-dark btn-sm purchase-data {% if not user|has_group:'technician' and not user|has_group:'admin' %} widerIcon {% endif %}" href="javascript:void(0)" data-id="{{ purchase.pk }}" data-status="{{purchase.status.name|lower}}" title="Purchase information">
                                 <i class="fa fa-info-circle"></i>
                             </button>
-                            {% if user|has_group:"admin" %}
-                                <button class="btn highlight-color btn-sm" title="Delete the whole purchase" id="{{purchase.pk}}">
+                            {% if purchase.status.name|lower != 'received' and user|has_group:"admin" %}
+                                <button class="btn highlight-color btn-sm deleteBtn" title="Delete the whole purchase" data-id="{{purchase.pk}}">
                                     <i class="fa fa-trash"></i>
                                 </button>
                             {% endif %}
@@ -78,6 +80,7 @@ let itemIds = null
 let formClone = {}
 let body = document.querySelector('body')
 let statuses = {{ statuses | safe }}
+let purchases_data = {{ purchases_data | safe }}
 let items = {{ items_data | safe }}
 let newSelectedTrs = []
 $(function() {
@@ -122,7 +125,6 @@ $(function() {
             $('#uni_modal form').submit()
         })
         modalFooter.appendChild(createButton)
-        $('#uni_modal').off('shown.bs.modal')
         $('#uni_modal').on('shown.bs.modal', function() {
             if($('#purchase-form').length){
                 restoreFormData()
@@ -143,7 +145,7 @@ $(function() {
                             title: 'Item',
                             render: function (data, type, row) {
                                 let foundElement = items.filter(element => element.id == data)[0]
-                                return `<span id="${foundElement.id}" data-id="${foundElement.id}">${foundElement.group__name} - ${foundElement.id}</span>`
+                                return `<span id="${foundElement.id}" data-id="${foundElement.id}">${foundElement.part_number__group__name} - ${foundElement.id}</span>`
                             },
                         },
                         {data: 'price', title: 'Price'},
@@ -158,23 +160,10 @@ $(function() {
                                 deleteButton.appendChild(deleteIcon)
                                 deleteButton.addEventListener('click', (e)=>{   
                                     e.preventDefault()
-                                    let tr = e.target.closest('tr')
-                                    let children = tr.children
-                                    children = children[1].children
-                                    let filteredData = generalData.filter(element => element.item == children[0].id)
-                                    if(filteredData.length == 1){
-                                        generalData.forEach((entry) =>{
-                                            if (entry.item == filteredData[0].item){
-                                                let index = generalData.findIndex(item => item.item === filteredData[0].item)
-                                                if (index !== -1) {
-                                                    generalData.splice(index, 1)
-                                                    groupTable.row(tr).remove().draw(false)
-                                                }
-                                            }
-                                        })
-                                        if (groupTable.column(1).data() != null){
-                                            itemIds = groupTable.column(1).data().toArray()
-                                        }
+                                    let modal = document.querySelector('#uni_modal')
+                                    if(modal != null){
+                                        modal.style.zIndex = 'auto'
+                                        _conf('Are you sure you want to delete this item?', 'delete_item', [e, modal])
                                     }
                                 })
                                 return deleteButton
@@ -183,7 +172,8 @@ $(function() {
                     ], 
                     columnDefs: [
                         {orderable: false, targets: [1,2,3]},
-                    ]
+                    ],
+                    order: [[1, 'asc']]
                 })
             }
             let tBody = document.querySelector('tbody')
@@ -192,9 +182,17 @@ $(function() {
                 addButton.removeEventListener('click', handleAddItem)
                 addButton.addEventListener('click', handleAddItem)
             }
+            $('[type=search]').each(function () {
+                if(!$(this).attr('placeholder')){
+                    $(this).attr("placeholder", "Search...")
+                }
+                $(this).attr("autocomplete", "off");
+                if (!$(this).prev().hasClass('fa-search')) {
+                    $(this).before('<span class="fa fa-search"></span>')
+                }
+            })
         })
     })
-    $(document).off('click')
     $(document).on('click', '.purchase-data', function(e) {
         let id = e.target.dataset.id
         let status = e.target.dataset.status
@@ -209,14 +207,24 @@ $(function() {
         title.innerHTML = "Purchase Information"
         let titleDiv = document.createElement('div')
         titleDiv.classList.add('d-flex')
-        let deleteButton = document.createElement('button')
-        deleteButton.classList.add('btn', 'highlight-color', 'btn-sm')
-        let deleteIcon = document.createElement('i')
-        deleteIcon.classList.add('fa', 'fa-trash')
-        deleteButton.appendChild(deleteIcon)
-        deleteButton.title = "Delete the whole purchase"
         titleDiv.appendChild(title)
-        titleDiv.appendChild(deleteButton)
+        {% if user|has_group:"admin" %}
+            if(e.target.dataset.status != 'received'){
+                let deleteButton = document.createElement('button')
+                deleteButton.classList.add('btn', 'highlight-color', 'btn-sm')
+                let deleteIcon = document.createElement('i')
+                deleteIcon.classList.add('fa', 'fa-trash')
+                deleteButton.appendChild(deleteIcon)
+                deleteButton.title = "Delete the whole purchase"
+                deleteButton.addEventListener('click', (e)=>{
+                    let id = document.querySelector('.purchaseContent').dataset.id
+                    let modal = document.querySelector('#uni_modal')
+                    modal.style.zIndex = 'auto'
+                    _conf("Are you sure you want to delete this Purchase?", "delete_purchase_group", [id])
+                })
+                titleDiv.appendChild(deleteButton)
+            }
+        {% endif %}
         let anchor = document.createElement('div')
         anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
         anchor.addEventListener('click', (e)=>{
@@ -235,7 +243,7 @@ $(function() {
             editIcon.classList.add('fa', 'fa-edit')
             editButton.appendChild(editIcon)
             let editPar = document.createElement('p')
-            editPar.appendChild(document.createTextNode('Edit')) //Finish editing permissions by groups 
+            editPar.appendChild(document.createTextNode('Edit'))
             editButton.appendChild(editPar)
             editButton.removeEventListener('click', (e)=>{editPurchase(e, modalFooter, id, headerDiv, finalUrl, editButton, receiveButton)})
             editButton.addEventListener('click', (e)=>{editPurchase(e, modalFooter,id, headerDiv, finalUrl, editButton, receiveButton)})
@@ -253,7 +261,7 @@ $(function() {
                 let receivePar = document.createElement('p')
                 receivePar.appendChild(document.createTextNode('Receive'))
                 receiveButton.appendChild(receivePar)
-                receiveButton.addEventListener('click', (e)=>{receivePurchase(e, items, id, modalFooter, receiveButton, headerDiv, finalUrl, editButton)})
+                receiveButton.addEventListener('click', (e)=>{receivePurchase(e, items, id, modalFooter, false, receiveButton, headerDiv, finalUrl, editButton)})
                 modalFooter.appendChild(receiveButton)
             }
         {% else %}
@@ -261,6 +269,36 @@ $(function() {
                 modalFooter.classList.add('hidden')
             }
         {% endif %}
+    })
+    $(document).on('click', '.editBtn', function(e) {
+        e.preventDefault()
+        let id = e.target.dataset.id
+        let baseUrl = "{% url 'purchase-record' 0 %}"
+        let finalUrl = baseUrl.replace('0', id)
+        let headerDiv = document.createElement('div')
+        let modalFooter = document.querySelector('.modal-footer')
+        let receiveButton = null
+        let editButton = document.createElement('button')
+        editButton.classList.add('btn', 'selected', 'edit')
+        let editIcon = document.createElement('i')
+        editIcon.classList.add('fa', 'fa-edit')
+        editButton.appendChild(editIcon)
+        let editPar = document.createElement('p')
+        editPar.appendChild(document.createTextNode('Edit'))
+        editButton.appendChild(editPar)
+        receiveButton = document.createElement('button')
+        receiveButton.classList.add('btn', 'btn-bg-dark', 'modalButton', 'edit')
+        let receiveIcon = document.createElement('i')
+        receiveIcon.classList.add('fa', 'fa-boxes-stacked')
+        receiveButton.appendChild(receiveIcon)
+        let receivePar = document.createElement('p')
+        receivePar.appendChild(document.createTextNode('Receive'))
+        receiveButton.appendChild(receivePar)
+        receiveButton.addEventListener('click', (e)=>{receivePurchase(e, items, id, modalFooter, false, receiveButton, headerDiv, finalUrl, editButton)})
+        modalFooter.appendChild(receiveButton)
+        editButton.removeEventListener('click', (e)=>{editPurchase(e, modalFooter, id, headerDiv, finalUrl, editButton, receiveButton)})
+        editButton.addEventListener('click', (e)=>{editPurchase(e, modalFooter,id, headerDiv, finalUrl, editButton, receiveButton)})
+        editPurchase(e, modalFooter, id, headerDiv, finalUrl, editButton, receiveButton, true)
     })
     $(document).on('click', '.delete_purchase_item', function(e) {
         let modal = document.querySelector('#uni_modal')
@@ -274,6 +312,26 @@ $(function() {
             _conf("Do you want to delete this Item from the Purchase permanently?", "delete_purchase", [id])
             
         }
+    })
+    $(document).on('click', '.deleteBtn', function(e){
+        let modal = document.querySelector('#uni_modal')
+        modal.style.zIndex = 'auto'
+        let id = e.target.dataset.id
+        _conf("Do you want to delete the purchase?", "delete_purchase_group", [id])
+    })
+    $(document).on('click', '.receivePurchase', function(e){
+        let id = e.target.dataset.id
+        let modalFooter = document.querySelector('.modal-footer')
+        receiveButton = document.createElement('button')
+        receiveButton.classList.add('btn', 'btn-bg-dark', 'modalButton', 'edit')
+        let receiveIcon = document.createElement('i')
+        receiveIcon.classList.add('fa', 'fa-boxes-stacked')
+        receiveButton.appendChild(receiveIcon)
+        let receivePar = document.createElement('p')
+        receivePar.appendChild(document.createTextNode('Receive'))
+        receiveButton.appendChild(receivePar)
+        receiveButton.addEventListener('click', (e)=>{receivePurchase(e, items, id, modalFooter, false, receiveButton, headerDiv, finalUrl, editButton)})
+        receivePurchase(e, items, id, modalFooter, true, receiveButton)
     })
     $.extend(true, $.fn.dataTable.defaults, {
         language: {
@@ -314,7 +372,6 @@ $(function() {
                 }
             }
         ],
-        order: [[2, 'desc']],
     })
     let currentData = table.data().toArray()
     let filterLabels = ['Status: ']
@@ -374,9 +431,14 @@ $(function() {
 
     table.draw()
     $('[type=search]').each(function () {
-        $(this).attr("placeholder", "Search...")
-        $(this).before('<span class="fa fa-search"></span>')
-    })
+            if(!$(this).attr('placeholder')){
+                $(this).attr("placeholder", "Search...")
+            }
+            $(this).attr("autocomplete", "off");
+            if (!$(this).prev().hasClass('fa-search')) {
+                $(this).before('<span class="fa fa-search"></span>')
+            }
+        })
     let top1End = document.querySelector('.top1End')
     let clearFilterButton = document.createElement('div')
     clearFilterButton.classList.add('btn', 'btn-clear', 'rounded-xl')
@@ -388,11 +450,12 @@ $(function() {
             input.selectedIndex = 0
             input.dispatchEvent(event)
         })
+        table.search('').draw();
     })
     top1End.appendChild(clearFilterButton)
 })
 
-const editPurchase = (e, modalFooter, id, headerDiv, finalUrl, editButton, receiveButton)=>{
+const editPurchase = (e, modalFooter, id, headerDiv, finalUrl, editButton, receiveButton, close=false)=>{
     $('#uni_modal').modal('hide')
     let div = document.createElement('div')
     div.classList.add("cardHeader")
@@ -405,15 +468,21 @@ const editPurchase = (e, modalFooter, id, headerDiv, finalUrl, editButton, recei
     anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
     anchor.addEventListener('click', (e)=>{
         $('#uni_modal').modal('hide')
-        setTimeout(()=>{
-            uni_modal(headerDiv, finalUrl, 'modal-md')
-            modalFooter.innerHTML = ''
-            modalFooter.appendChild(editButton)
-            modalFooter.appendChild(receiveButton)
-        }, 300)
+        if(!close){
+            setTimeout(()=>{
+                uni_modal(headerDiv, finalUrl, 'modal-md')
+                modalFooter.innerHTML = ''
+                modalFooter.appendChild(editButton)
+                modalFooter.appendChild(receiveButton)
+            }, 300)
+        }
     })
     let icon = document.createElement('i')
-    icon.classList.add('fa', 'fa-arrow-left')
+    if(!close){
+        icon.classList.add('fa', 'fa-arrow-left')
+    }else{
+        icon.classList.add('fa', 'fa-times')
+    }
     let titleDiv = document.createElement('div')
     titleDiv.classList.add('titleDiv')
     titleDiv.appendChild(editIcon)
@@ -439,23 +508,36 @@ const editPurchase = (e, modalFooter, id, headerDiv, finalUrl, editButton, recei
     modalFooter.appendChild(saveButton)
 }
 
-const receivePurchase = (e, items, id, modalFooter, receiveButton, headerDiv, finalUrl, editButton)=>{
+const receivePurchase = (e, items, id, modalFooter, small=false, receiveButton, headerDiv, finalUrl, editButton)=>{
     let item_data = {}
     let filteredItems = []
     let index = 0
     let sharedZoneId = null
-    purchaseItemTable = document.querySelectorAll('#purchase-items>tbody>tr')
+    let firstId = null
+    let firstItem = null
     let itemCicles = document.createElement('div')
     itemCicles.classList.add('d-flex', 'justify-content-around', 'align-center', 'mb-2', 'circlesDiv')
-    purchaseItemTable.forEach((element)=>{
-        filteredItems.push(items.filter(data => data.id == element.children[1].id)[0])
-        let circle = document.createElement('div')
-        circle.classList.add('circle')
-        circle.setAttribute('id', element.children[1].id)
-        itemCicles.appendChild(circle)
-    })
-    let firstId = filteredItems[index].id
-    let firstItem = filteredItems.filter(element => element.id == firstId)[0]
+    if(!small){
+        purchaseItemTable = document.querySelectorAll('#purchase-items>tbody>tr')
+        purchaseItemTable.forEach((element)=>{
+            filteredItems.push(items.filter(data => data.id == element.children[1].id)[0])
+            let circle = document.createElement('div')
+            circle.classList.add('circle')
+            circle.setAttribute('id', element.children[1].id)
+            itemCicles.appendChild(circle)
+        })
+        firstId = filteredItems[index].id
+        firstItem = items.filter(element => element.id == firstId)[0]
+    }else{
+        filteredItems = purchases_data[id]
+        for (item in purchases_data[id]){
+            let circle = document.createElement('div')
+            circle.classList.add('circle')
+            circle.setAttribute('id', purchases_data[id][item].item_id)
+            itemCicles.appendChild(circle)
+        }
+        firstId = filteredItems[0].item_id
+    }
     $('#uni_modal').modal('hide')
     let div = document.createElement('div')
     div.classList.add("cardHeader")
@@ -464,19 +546,26 @@ const receivePurchase = (e, items, id, modalFooter, receiveButton, headerDiv, fi
     title.innerHTML = "Receive Items"
     let anchor = document.createElement('div')
     let editIcon = document.createElement('i')
-    editIcon.classList.add('fa', 'fa-boxes-stacked')
+    editIcon.classList.add('fa', 'fa-boxes-stacked', 'me-1')
     anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
-    anchor.addEventListener('click', (e)=>{
-        $('#uni_modal').modal('hide')
-        setTimeout(()=>{
-            uni_modal(headerDiv, finalUrl, 'modal-md')
-            modalFooter.innerHTML = ''
-            modalFooter.appendChild(editButton)
-            modalFooter.appendChild(receiveButton)
-        }, 300)
-    })
     let icon = document.createElement('i')
-    icon.classList.add('fa', 'fa-arrow-left')
+    if(!small){
+        anchor.addEventListener('click', (e)=>{
+            $('#uni_modal').modal('hide')
+            setTimeout(()=>{
+                uni_modal(headerDiv, finalUrl, 'modal-md')
+                modalFooter.innerHTML = ''
+                modalFooter.appendChild(editButton)
+                modalFooter.appendChild(receiveButton)
+            }, 300)
+        })
+        icon.classList.add('fa', 'fa-arrow-left')
+    }else{
+        icon.classList.add('fa', 'fa-times')
+        anchor.addEventListener('click', (e)=>{
+            $('#uni_modal').modal('hide')
+        })
+    }
     let titleDiv = document.createElement('div')
     titleDiv.classList.add('titleDiv')
     titleDiv.appendChild(editIcon)
@@ -507,57 +596,139 @@ const receivePurchase = (e, items, id, modalFooter, receiveButton, headerDiv, fi
     receiveSubmitButton.appendChild(receiveSubmitPar)
     let nextId = null
     let nextItem = null
+    let serialCheck = null
+    let zoneCheck = null
+    let zoneSelect = null
+    $('#uni_modal').on('shown.bs.modal', function() {
+        serialCheck = document.querySelector('#empty-sn')
+        zoneCheck = document.querySelector('#assign-all')
+        zoneSelect = document.querySelector('#zone')
+        receiveClone = receiveButton.cloneNode(true)
+        if(serialCheck != null){
+            serialCheck.addEventListener('change', ()=>{
+                let serialInput = document.querySelector('#serial_number')
+                if(serialCheck.checked){
+                    if (serialInput.value == ""){
+                        serialInput.value = "-"
+                    }
+                    serialInput.setAttribute('disabled', "")
+                    if(zoneCheck.checked){
+                        if(modalFooter.childNodes[0].contains(saveButton)){
+                            modalFooter.childNodes[0].removeChild(saveButton)
+                            receiveClone.addEventListener('click', ()=>{
+                                for(item in filteredItems){
+                                    if(small){
+                                        item_data[filteredItems[item].item_id] = {item: filteredItems[item].item_id, zone: zoneSelect.value, serial_number: serialInput.value}
+                                    }else{
+                                        item_data[filteredItems[item].id] = {item: filteredItems[item].id, zone: zoneSelect.value, serial_number: serialInput.value}
+                                    }
+                                }
+                                receive_purchase(id, item_data)
+                            })
+                            modalFooter.childNodes[0].appendChild(receiveClone)
+                        }
+                    }
+                }else{
+                    if(serialInput.value == "-"){
+                        serialInput.value = ""
+                    }
+                    serialInput.removeAttribute('disabled')
+                    if(zoneCheck.checked){
+                        if(modalFooter.childNodes[0].contains(receiveClone)){
+                            modalFooter.childNodes[0].removeChild(receiveClone)
+                            modalFooter.childNodes[0].appendChild(saveButton)
+                        }
+                    }
+                }
+            })
+        }
+        if(zoneCheck != null){
+            zoneCheck.addEventListener('change', ()=>{
+                if (zoneSelect.value == 'All'){
+                    zoneSelect.value = 1
+                }
+                if(zoneCheck.checked && serialCheck.checked){
+                    if(modalFooter.childNodes[0].contains(saveButton)){
+                        modalFooter.childNodes[0].removeChild(saveButton)
+                        receiveClone.addEventListener('click', ()=>{
+                            for(item in filteredItems){
+                                if(small){
+                                    item_data[filteredItems[item].item_id] = {item: filteredItems[item].item_id, zone: zoneSelect.value, serial_number: serialInput.value}
+                                }else{
+                                    item_data[filteredItems[item].id] = {item: filteredItems[item].id, zone: zoneSelect.value, serial_number: serialInput.value}
+                                }
+                            }
+                            receive_purchase(id, item_data)
+                        })
+                        modalFooter.childNodes[0].appendChild(receiveClone)
+                    }
+                }else{
+                    if(modalFooter.childNodes[0].contains(receiveClone)){
+                        modalFooter.childNodes[0].removeChild(receiveClone)
+                        modalFooter.childNodes[0].appendChild(saveButton)
+                    }
+                }
+            })
+        }
+    })
     saveButton.addEventListener('click', (e)=>{
         let itemKeys = Object.keys(item_data)
-        let codeInput = document.querySelector('#code')
         let serialInput = document.querySelector('#serial_number')
-        let zoneCheck = document.querySelector('#assign-all')
         let zoneSelect = document.querySelector('#zone')
         let itemInput = document.querySelector('#item')
-        if (codeInput.value != '' && codeInput.value != null && codeInput.value.length > 4 || serialInput.value != '' && serialInput.value != null && serialInput.value.length > 4){
-            if(zoneCheck.checked){
-                if(zoneSelect.value != null){
-                    sharedZoneId = zoneSelect.selectedIndex
-                    Object.keys(item_data).forEach(key => {
-                        item_data[key].zone = zoneSelect.value
-                    })
+        if (serialCheck.checked || serialInput.value != '' && serialInput.value != null && serialInput.value.length > 4){
+            //I need to change the button to Receive when all the checkbox are selected
+            if(zoneCheck.checked && serialCheck.checked){
+                for(item in filteredItems){
+                    if(small){
+                        item_data[filteredItems[item].item_id] = {item: filteredItems[item].item_id, zone: zoneSelect.value, serial_number: serialInput.value}
+                    }else{
+                        item_data[filteredItems[item].id] = {item: filteredItems[item].id, zone: zoneSelect.value, serial_number: serialInput.value}
+                    }
+                }
+                receive_purchase(id, item_data)
+            }else{
+                if(zoneCheck.checked){
+                    if(zoneSelect.value != null){
+                        sharedZoneId = zoneSelect.selectedIndex
+                        Object.keys(item_data).forEach(key => {
+                            item_data[key].zone = zoneSelect.value
+                        })
+                    }
                 }
             }
             if (index == 0){
-                item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+                item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, serial_number: serialInput.value}
             }else{
-                item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+                item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, serial_number: serialInput.value}
             }
             if(index != filteredItems.length){
                 index += 1
             }
             if(filteredItems[index] != null){
-                nextId = filteredItems[index].id
-                nextItem = filteredItems.filter(element => element.id == nextId)[0]
+                if(!small){
+                    nextId = filteredItems[index].id
+                    nextItem = items.filter(element => element.id == nextId)[0]
+                }else{
+                    nextId = filteredItems[index].item_id
+                    nextItem = items.filter(element => element.id == nextId)[0]
+                }
                 itemInput.value = nextItem.group__name+" - "+nextItem.id
                 if(sharedZoneId != null){
                     zoneSelect.selectedIndex = sharedZoneId
                 }else{
                     zoneSelect.selectedIndex = 0
                 }
-                codeInput.value = nextItem.code
-                if(nextItem.code != null && nextItem.code != ''){
-                    if(!codeInput.disabled){
-                        codeInput.setAttribute('disabled', '')
-                    }
-                }else{
-                    if(codeInput.disabled){
-                        codeInput.removeAttribute('disabled')
-                    }
-                }
-                serialInput.value = nextItem.serial_number
-                if(nextItem.serial_number != null && nextItem.serial_number != ''){
-                    if(!serialInput.disabled){
-                        serialInput.setAttribute('disabled', '')
-                    }
-                }else{
-                    if(serialInput.disabled){
-                        serialInput.removeAttribute('disabled')
+                if(!serialCheck.checked){
+                    serialInput.value = nextItem.serial_number
+                    if(nextItem.serial_number != null && nextItem.serial_number != ''){
+                        if(!serialInput.disabled){
+                            serialInput.setAttribute('disabled', '')
+                        }
+                    }else{
+                        if(serialInput.disabled){
+                            serialInput.removeAttribute('disabled')
+                        }
                     }
                 }
             }
@@ -577,11 +748,11 @@ const receivePurchase = (e, items, id, modalFooter, receiveButton, headerDiv, fi
                         if(item_data[child.id] != null){
                             if (index == 0 ){
                                 if(item_data[firstId.toString()] == null){
-                                    item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+                                    item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, serial_number: serialInput.value}
                                 }
                             }else{
                                 if(item_data[nextId.toString()] == null){
-                                    item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+                                    item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, serial_number: serialInput.value}
                                 }
                             }
                             circlesDiv.childNodes.forEach((child, arrayIndex)=>{
@@ -591,35 +762,27 @@ const receivePurchase = (e, items, id, modalFooter, receiveButton, headerDiv, fi
                                         if(item_data[child.id] != null){
                                             if (index == 0 ){
                                                 if(item_data[firstId.toString()] == null){
-                                                    item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+                                                    item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, serial_number: serialInput.value}
                                                 }
                                             }else{
                                                 if(item_data[nextId.toString()] == null){
-                                                    item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+                                                    item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, serial_number: serialInput.value}
                                                 }
                                             }
                                             index = arrayIndex
-                                            let currentItem = filteredItems.filter(element => element.id == parseInt(item_data[child.id].item))[0]
+                                            let currentItem = items.filter(element => element.id == parseInt(item_data[child.id].item))[0]
                                             itemInput.value = currentItem.group__name+" - "+currentItem.id
                                             zoneSelect.value = parseInt(item_data[child.id].zone)
-                                            codeInput.value = item_data[child.id].code
-                                            if(item_data[child.id].code != null && item_data[child.id].code != ''){
-                                                if(!codeInput.disabled){
-                                                    codeInput.setAttribute('disabled', '')
-                                                }
-                                            }else{
-                                                if(codeInput.disabled){
-                                                    codeInput.removeAttribute('disabled')
-                                                }
-                                            }
-                                            serialInput.value = item_data[child.id].serial_number
-                                            if(item_data[child.id].serial_number != null && item_data[child.id].serial_number != ''){
-                                                if(!serialInput.disabled){
-                                                    serialInput.setAttribute('disabled', '')
-                                                }
-                                            }else{
-                                                if(serialInput.disabled){
-                                                    serialInput.removeAttribute('disabled')
+                                            if(!serialCheck.checked){
+                                                serialInput.value = item_data[child.id].serial_number
+                                                if(item_data[child.id].serial_number != null && item_data[child.id].serial_number != ''){
+                                                    if(!serialInput.disabled){
+                                                        serialInput.setAttribute('disabled', '')
+                                                    }
+                                                }else{
+                                                    if(serialInput.disabled){
+                                                        serialInput.removeAttribute('disabled')
+                                                    }
                                                 }
                                             }
                                             circlesDiv.childNodes.forEach((element)=>{
@@ -639,27 +802,19 @@ const receivePurchase = (e, items, id, modalFooter, receiveButton, headerDiv, fi
                             })
                             index = arrayIndex
                             nextId = child.id
-                            let currentItem = filteredItems.filter(element => element.id == parseInt(item_data[child.id].item))[0]
+                            let currentItem = items.filter(element => element.id == parseInt(item_data[child.id].item))[0]
                             itemInput.value = currentItem.group__name+" - "+currentItem.id
                             zoneSelect.value = parseInt(item_data[child.id].zone)
-                            codeInput.value = item_data[child.id].code
-                            if(item_data[child.id].code != null && item_data[child.id].code != ''){
-                                if(!codeInput.disabled){
-                                    codeInput.setAttribute('disabled', '')
-                                }
-                            }else{
-                                if(codeInput.disabled){
-                                    codeInput.removeAttribute('disabled')
-                                }
-                            }
-                            serialInput.value = item_data[child.id].serial_number
-                            if(item_data[child.id].serial_number != null && item_data[child.id].serial_number != ''){
-                                if(!serialInput.disabled){
-                                    serialInput.setAttribute('disabled', '')
-                                }
-                            }else{
-                                if(serialInput.disabled){
-                                    serialInput.removeAttribute('disabled')
+                            if(!serialCheck.checked){
+                                serialInput.value = item_data[child.id].serial_number
+                                if(item_data[child.id].serial_number != null && item_data[child.id].serial_number != ''){
+                                    if(!serialInput.disabled){
+                                        serialInput.setAttribute('disabled', '')
+                                    }
+                                }else{
+                                    if(serialInput.disabled){
+                                        serialInput.removeAttribute('disabled')
+                                    }
                                 }
                             }
                             circlesDiv.childNodes.forEach((element)=>{
@@ -687,7 +842,7 @@ const receivePurchase = (e, items, id, modalFooter, receiveButton, headerDiv, fi
             let emptyFields = false
             let emptyId = null
             itemKeys.forEach(key => {
-                if(item_data[key].code == '' && item_data[key].serial_number == ''){
+                if(item_data[key].serial_number == ''){
                     emptyFields = true
                     if(emptyId == null){
                         emptyId = item_data[key].item
@@ -721,7 +876,7 @@ const receivePurchase = (e, items, id, modalFooter, receiveButton, headerDiv, fi
 const handleAddItem = (e)=>{
     e.preventDefault()
     saveFormData()
-    newSelectedTrs = []
+    newSelectedTrs = generalData
     $('#uni_modal').modal('hide')
     let modalFooter = document.querySelector('.modal-footer')
     let div = document.createElement('div')
@@ -792,20 +947,78 @@ const handleAddItem = (e)=>{
                 itemIds = groupTable.column(1).data().toArray()
             }
         }
-        let itemTable = $('#item-list').DataTable()
-        let tableTrs = Array.from(itemTable.rows().nodes())
-        tableTrs.forEach(tr=>{
-            tr.classList.add('cursor-pointer')
-            let tds = tr.children
-            let generalIds = generalData.map(element => element.item)
-            if(generalIds.includes(tds[1].id)){
-                if(tds[3].children[0] != null && tds[3].children[0].tagName == 'INPUT'){
-                    tds[3].children[0].value = generalData.filter(element=> element.item == tds[1].id)[0].price
-                    tds[3].children[0].setAttribute('disabled', '')
+        let itemTable = null
+        if (!$.fn.DataTable.isDataTable('#item-list')) {
+            itemTable = $('#item-list').DataTable({
+                initComplete: function(){
+                    let addAllBtn = document.createElement('div')
+                    addAllBtn.setAttribute('title', 'By clicking this button all the valid entries in the table will be selected')
+                    addAllBtn.classList.add('btn', 'selected', 'order-1', 'text-nowrap', 'd-flex', 'align-items-center', 'px-2')
+                    addAllBtn.appendChild(document.createTextNode('Add All'))
+                    let dtEnd = document.querySelector('.dt-end')
+                    dtEnd.classList.add('d-flex', 'align-item-center', 'justify-content-around')
+                    dtEnd.childNodes[0].classList.add('order-3', 'mt-0' , 'd-flex' , 'align-items-center', 'ms-2')
+                    addAllBtn.addEventListener('click', (e)=>{
+                        let visibleRows = itemTable.rows({ search: 'applied' }).nodes().toArray()
+                        visibleRows.forEach(row=>{
+                            if (row.childNodes[9].childNodes[0].tagName == undefined){//9 is the price position
+                                if(!row.classList.contains('trSelected')){
+                                    row.click()
+                                }
+                            }else{
+                                if(row.childNodes[9].childNodes[0].value != ''){
+                                    if(!row.classList.contains('trSelected')){
+                                        row.click()
+                                    }
+                                }else{
+                                    let priceInput = document.querySelector('#allPrice')
+                                    row.childNodes[9].childNodes[0].value = priceInput.value
+                                    row.click()
+                                }
+                            }
+                        })
+                    })
+                    let setPriceDiv = document.createElement('div')
+                    setPriceDiv.classList.add('order-2', 'd-flex', 'flex-column', 'align-items-center', 'customW', 'ms-2')
+                    let label = document.createElement('label')
+                    label.for= 'allPrice'
+                    label.appendChild(document.createTextNode('Set Price'))
+                    label.classList.add('text-center')
+                    let input = document.createElement('input')
+                    input.type = 'number'
+                    input.min = 0
+                    input.id = 'allPrice'
+                    input.value = 0
+                    input.classList.add('w-100')
+                    setPriceDiv.appendChild(label)
+                    setPriceDiv.appendChild(input)
+                    dtEnd.appendChild(addAllBtn)
+                    dtEnd.appendChild(setPriceDiv)
                 }
-                tr.classList.add('trSelected')
+            })
+            let tableTrs = Array.from(itemTable.rows().nodes())
+            tableTrs.forEach(tr=>{
+                tr.classList.add('cursor-pointer')
+                let tds = tr.children
+                let generalIds = generalData.map(element => element.item)
+                if(generalIds.includes(tds[1].id)){
+                    if(tds[4].children[0] != null && tds[4].children[0].tagName == 'INPUT'){
+                        tds[4].children[0].value = generalData.filter(element=> element.item == tds[1].id)[0].price
+                        tds[4].children[0].setAttribute('disabled', '')
+                    }
+                    tr.classList.add('trSelected')
+                }
+                tr.addEventListener('click', handleTr)
+            })
+        }
+        $('[type=search]').each(function () {
+            if(!$(this).attr('placeholder')){
+                $(this).attr("placeholder", "Search...")
             }
-            tr.addEventListener('click', handleTr)
+            $(this).attr("autocomplete", "off");
+            if (!$(this).prev().hasClass('fa-search')) {
+                $(this).before('<span class="fa fa-search"></span>')
+            }
         })
     })
     modalFooter.innerHTML = ''
@@ -818,12 +1031,8 @@ const handleAddItem = (e)=>{
     selectPar.appendChild(document.createTextNode('Add'))
     selectButton.appendChild(selectPar)
     selectButton.addEventListener('click', (e)=>{
-        if(generalData.length == 0){
+        if(generalData.length = newSelectedTrs.length){
             generalData = newSelectedTrs
-        }else{
-            if(newSelectedTrs.length > 0){
-                generalData = newSelectedTrs
-            }
         }
         groupTable.clear()
         groupTable.rows.add(generalData)
@@ -838,8 +1047,8 @@ const handleTr = (e)=>{
     let tds = e.currentTarget.children
     let newRow = {}
     if (e.target.tagName != "INPUT"){
-        if (tds[3].innerHTML != ""){
-            let priceInput = tds[3].children[0]
+        if (tds[4].innerHTML != ""){
+            let priceInput = tds[4].children[0]
             if (newSelectedTrs.length == 0){
                 newSelectedTrs = [...newSelectedTrs, ...generalData]
             }
@@ -862,7 +1071,7 @@ const handleTr = (e)=>{
                     }
                 }
             }else{
-                newRow = {'item': tds[1].id, 'price': tds[3].innerHTML}
+                newRow = {'item': tds[1].id, 'price': tds[4].innerHTML}
                 let index = newSelectedTrs.findIndex(element => element.item === newRow.item)
                 if (index != -1){
                     newSelectedTrs.splice(index, 1)
@@ -980,6 +1189,28 @@ function delete_purchase_group(id) {
         }
     })
 }
+function delete_item(e, modal){
+    let tr = e.target.closest('tr')
+    let children = tr.children
+    children = children[1].children
+    let filteredData = generalData.filter(element => element.item == children[0].id)
+    if(filteredData.length == 1){
+        generalData.forEach((entry) =>{
+            if (entry.item == filteredData[0].item){
+                let index = generalData.findIndex(item => item.item === filteredData[0].item)
+                if (index !== -1) {
+                    generalData.splice(index, 1)
+                    groupTable.row(tr).remove().draw(false)
+                }
+            }
+        })
+        if (groupTable.column(1).data() != null){
+            itemIds = groupTable.column(1).data().toArray()
+        }
+    }
+    $('#confirm_modal').modal('hide')
+    modal.style.zIndex = ""
+}
 function saveFormData() {
     const form = document.querySelector('#purchase-form')
     const formData = new FormData(form)
@@ -991,6 +1222,12 @@ function restoreFormData() {
         if (form.querySelector(`[name="${key}"]`)) {
             form.querySelector(`[name="${key}"]`).value = formClone[key]
         }
+    }
+    let supplierId = document.querySelector('#selectedSupplierId')
+    if(supplierId.value != ''){
+        let supplierOption = document.querySelector(`[data-id="${supplierId.value}"].option`)
+        let supplierSelector = document.querySelector('#supplierSelector')
+        supplierSelector.value = supplierOption.innerHTML
     }
 }
 </script>

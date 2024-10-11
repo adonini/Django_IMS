@@ -7,23 +7,20 @@
         {% if operation is not None %}
             <input type="hidden" name="stock_type" value="{{operation}}">
         {% endif %}
-
-            <div class="form-group mb-3 ">
-                {% if stock.item is None %}
-                    <label for="item" class="control-label">Items</label>
-                    <select class="form-control rounded-0" name="item" id="item">
-                        {% if items|length > 1 %}
-                            <option value="All" {% if not stock.zone %} selected {% endif %} disabled>-----</option>
-                        {% endif %}
-                                {% for item in items %}
-                                    <option value="{{ item.id }}" {% if item.id == stock.item.id %} selected {% endif %}>{{item.group.name}} - {% if item.code is not None and item.code != '' %}{{item.code}}{% elif item.serial_number is not None and item.serial_number != '' %}{{item.serial_number}}{% else %}{{item.pk}}{% endif %}</option>
-                                {% endfor %}
-                    </select>
-                {% else %}
-                    <label for="item" class="control-label">Item</label>
-                    <input type="text" id="item" value="{{stock.item.group.name}} - {{stock.item.pk}}" disabled>
-                {% endif %}
-            </div>
+        <div class="form-group mb-3 position-relative">
+            <label for="item" class="control-label">Items</label>
+            {% if stock.item is None %}
+                <input type="text" class="form-control rounded-0" id="itemSelector" placeholder="Type to filter the items" autocomplete="false">
+                <input type="hidden" id="selectedItemId" name="item" value="">
+                <div class="itemOptionsContainer" hidden>
+                    {% for item in items %}
+                        <p class="option" data-id="{{item.id}}">{{item.part_number.group.name}} - {{item.id}}</p>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <input type="text" id="item" value="{{stock.item.part_number.group.name}} - {{stock.item.pk}}" disabled>
+            {% endif %}
+        </div>
         
         <div class="form-group mb-3 {% if operation == 2 %} hidden {% endif %}">
             <label for="zone" class="control-label">Zones</label>
@@ -39,7 +36,7 @@
         <div class="optionalInputs hidden">
             <p class="dark-text text-center mb-0" hidden>Please fill one or both of the fields below.</p>
             <div class="form-group mb-3 ">
-                <label for="code" class="control-label">Code</label>
+                <label for="code" class="control-label">Part Number</label>
                 <input type="text" class="form-control rounded-0" pattern="^[A-Za-z]+-[A-Za-z0-9]+$" title="Please follow this format (... = Might be more characters, X = Letters): XX...-XX45..." id="code" name="code" value="{{ item.code }}" required>
             </div>
             <div class="form-group mb-3 ">
@@ -48,7 +45,7 @@
             </div>
         </div>
         <div class="instalation {% if operation == 1 %} hidden {% endif %}">
-            <label for="telescope">Instalation place</label>
+            <label for="telescope">Place</label>
             <select class="form-control rounded-0" name="telescope" id="telescope">
                 <option value="0" selected disabled>-----</option>
                 <option value="None">None</option>
@@ -68,7 +65,7 @@
     </form>
 </div> {% endcomment %}
 <script>
-    let operation = {{operation}}
+    operation = {{operation}}
     {% if unStockedItems %}
         let unStockedItems = {{ unStockedItems | safe }}
     {% endif %}
@@ -157,4 +154,57 @@
             
         }
     })
+    alertDiv = document.querySelector('.guide-message')
+    itemInput = document.querySelector('#itemSelector')
+    itemOptionsContainer = document.querySelector('.itemOptionsContainer')
+    selecteditemId = document.querySelector('#selectedItemId')
+    if (itemOptionsContainer != null){
+        let itemOptions = [...itemOptionsContainer.children]
+        itemInput.addEventListener('focus', (e)=>{
+            if(alertDiv.childNodes.length > 0){
+                alertDiv.classList.remove('alert-danger')
+                alertDiv.innerHTML = ""
+            }
+            itemInput.value = ""
+            setTimeout(()=>{itemOptionsContainer.removeAttribute('hidden')}, 150)
+            itemOptionsContainer.innerHTML = ""
+            itemOptions.forEach(value =>{
+                    itemOptionsContainer.appendChild(value)
+                })
+        })
+        itemInput.addEventListener('focusout', (e)=>{
+            setTimeout(()=>{itemOptionsContainer.setAttribute('hidden', '')}, 150)
+        })
+        itemInput.addEventListener('input', (e)=>{
+            itemOptionsContainer.innerHTML = ""
+            if (itemInput.value.length > 0){
+                let newValues = itemOptions.filter((element) => element.innerHTML.toLocaleLowerCase().includes(itemInput.value.toLocaleLowerCase()))
+                if(newValues.length > 0){
+                    newValues.forEach(value =>{
+                        itemOptionsContainer.appendChild(value)
+                    })
+                }else{
+                    let emptyPar = document.createElement('p')
+                    emptyPar.appendChild(document.createTextNode('There is no matching items'))
+                    emptyPar.classList.add('option')
+                    emptyPar.setAttribute('disabled', '')
+                    itemOptionsContainer.appendChild(emptyPar)
+                }
+            }else{
+                itemOptions.forEach(value =>{
+                    itemOptionsContainer.appendChild(value)
+                })
+            }
+        })
+        itemOptions.forEach(option =>{
+            option.addEventListener('click', (e)=>{
+                itemInput.value = e.target.innerHTML
+                selecteditemId.value = e.target.dataset.id
+                itemOptionsContainer.innerHTML = ""
+                itemOptions.forEach(value =>{
+                    itemOptionsContainer.appendChild(value)
+                })
+            })
+        })
+    }
 </script>

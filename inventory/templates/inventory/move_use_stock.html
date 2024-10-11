@@ -1,0 +1,71 @@
+{% comment %} {% load crispy_forms_tags %}
+<div class="container-fluid">
+    <form method="post" id="purchase-form">
+        {% csrf_token %}
+        {{ form|crispy }}
+    </form>
+</div> {% endcomment %}
+<div class="container-fluid">
+    <p class="alert hidden"></p>
+    <div class="d-flex w-25 position-absolute ms-5 mb-1">
+        <div class="ms-2 rounded-circle d-flex justify-content-center align-items-center infoBorder">
+            <i class="fa fa-info d-flex justify-content-center align-items-center pe-none"></i>
+        </div>
+    </div>
+    <p class="light-text text-center gap-1 border rounded p-1 position-absolute z-2 bg-white info mt-4" hidden> Select the {% if mode == 'move' %}zone{% else %}place{% endif %} where you are going to {% if mode == 'move' %}<strong>move the items to</strong>{% else %}<strong>use the items in</strong>{% endif %}<br>Select the items by <strong>clicking</strong> on them. <br> Select all with the "Add all" button. You can <strong>filter</strong> by typing any word before selecting all. <strong>Only the results will be selected then.</strong><br> <span class="highlight">NOTE: Specify a price to be able to select the items.</span></p>
+    <form action=" " id="stockMove-form">
+        {% csrf_token %}
+        {% if mode == 'move' %}
+            <div class="form-group mb-3">
+                <label for="zone" class="control-label mb-1">Zones</label>
+                <select class="form-control rounded-0" name="zone" id="zone">
+                    {% for zone in zones %}
+                        {% if zone.id != stock.zone.id %}
+                            <option value="{{ zone.id }}" {% if zone.id == purchase.zone.id %} selected {% endif %}> {{zone.location.name}} - {{ zone.name }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+        {% else %}
+            <div class="instalation form-group mb-3">
+                <label for="telescope" class="mb-1">Place</label>
+                <select class="form-control rounded-0" name="telescope" id="telescope">
+                    <option value="0" selected disabled>-----</option>
+                    <option value="None">None</option>
+                    {% for telescope in telescopes %}
+                        <option value="{{telescope.id}}">{{telescope.telescope.name}} - {{telescope.name}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
+    </form>
+    <div class="tableContainer">
+        <table class="table table-sm table-responsive table-hover" style="width:100%" id="sumStock-list">
+            <thead>
+                <tr class="">
+                    <th class="text-center dark-text">#</th>
+                    <th class="text-center dark-text">Item</th>
+                    <th class="text-center dark-text">Part Number</th>
+                    <th class="text-center dark-text">Location</th>
+                    <th class="text-center dark-text">Zone</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+    infoButton = document.querySelector('.infoBorder')
+    infoDiv = document.querySelector('.info')
+    infoButton.addEventListener('mouseover', ()=>{
+        if(infoDiv.hasAttribute('hidden')){
+            infoDiv.removeAttribute('hidden')
+        }
+    })
+    infoButton.addEventListener('mouseout', ()=>{
+        if(!infoDiv.hasAttribute('hidden')){
+            infoDiv.setAttribute('hidden', '')
+        }
+    })
+</script>

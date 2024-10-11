@@ -7,16 +7,22 @@
             <div class="inputsLeft">
                 <div class="form-group mb-3 ">
                     <label for="order_number" class="control-label">Order Number</label>
-                    <input type="text" class="form-control rounded-0" id="order_number" name="order_number" value="{{ foundPurchase.order_number }}">
+                    <input type="text" class="form-control rounded-0" id="order_number" name="order_number" value="{{ foundPurchase.order_number }}" autocomplete="off">
                 </div>
-                <div class="form-group mb-3">
+                <div class="form-group mb-3 position-relative">
                     <label for="supplier" class="control-label">Supplier</label>
-                    <select class="form-control rounded-0" name="supplier" id="supplier">
-                        <option value="" {% if not foundPurchase.supplier %} selected {% endif %}>-----</option>
+                    {% if not foundPurchase.supplier %}
+                    <input type="text" class="form-control rounded-0" id="supplierSelector" placeholder="Type to filter the items" autocomplete="off">
+                    <input type="hidden" id="selectedSupplierId" name="supplier" value="">
+                    {% else %}
+                    <input type="text" class="form-control rounded-0" id="supplierSelector" placeholder="Type to filter the items" value="{{foundPurchase.supplier.name}}" autocomplete="off">
+                    <input type="hidden" id="selectedSupplierId" name="supplier" value="{{foundPurchase.supplier.id}}">
+                    {% endif %}
+                    <div class="supplierOptionsContainer" hidden>
                         {% for supplier in suppliers %}
-                            <option value="{{ supplier.id }}" {% if supplier.id == foundPurchase.supplier.id %} selected {% endif %}>{{ supplier.name }}</option>
+                        <p class="option" data-id="{{supplier.id}}">{{supplier.name}}</p>
                         {% endfor %}
-                    </select>
+                    </div>
                 </div>
                 <div class="form-group mb-3 ">
                     <label for="shipping_cost" class="control-label">Shipping Cost</label>
@@ -27,7 +33,7 @@
                     <select class="form-control rounded-0" name="payment" id="payment">
                         <option value="" {% if not foundPurchase.payment %} selected {% endif %}>-----</option>
                         {% for payment in payments %}
-                            <option value="{{ payment.id }}" {% if payment.id == foundPurchase.payment.id %} selected {% endif %}>{{ payment.name }}</option>
+                        <option value="{{ payment.id }}" {% if payment.id == foundPurchase.payment.id %} selected {% endif %}>{{ payment.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -52,19 +58,19 @@
             </div>
         </div>
         {% if foundPurchase.id is None %}
-            <div class="below">
-                <div>
-                    <div class="manageTitle">
-                        <h4>Item List</h4><button id="add_item" class="btn btn-bg-dark rounded-xl btn-sm"><i class="fa fa-plus"></i> Add Item</button>
-                    </div>
-                    <table class="table table-sm table-responsive table-hover" style="width:100%" id="purchases-list">
-                        <thead>
-                        </thead>
-                        <tbody>
-                        </tbody>
-                    </table>
+        <div class="below">
+            <div>
+                <div class="manageTitle">
+                    <h4>Item List</h4><button id="add_item" class="btn btn-bg-dark rounded-xl btn-sm"><i class="fa fa-plus"></i> Add Item</button>
                 </div>
+                <table class="table table-sm table-responsive table-hover" style="width:100%" id="purchases-list">
+                    <thead>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
             </div>
+        </div>
         {% endif %}
     </form>
 </div>
@@ -76,6 +82,7 @@
     </form>
 </div> {% endcomment %}
 <script>
+    alertDiv = document.querySelector('.guide-message')
     $(document).ready(function() {
         let orderButton = document.querySelector('#order_date')
         let expectedDelDat = document.querySelector('#expected_delivery_date')
@@ -96,6 +103,7 @@
                 form.append(`data[${index}][item]`, item.item) 
                 form.append(`data[${index}][price]`, item.price) 
             })
+            console.log(form)
             var _this = $(this)
             $('.err-msg').remove();
             var el = $('<div>')
@@ -138,5 +146,55 @@
                 }
             })
         }) 
+    })
+    supplierInput = document.querySelector('#supplierSelector')
+    supplierOptionsContainer = document.querySelector('.supplierOptionsContainer')
+    selectedsupplierId = document.querySelector('#selectedSupplierId')
+    supplierOptions = [...supplierOptionsContainer.children]
+    supplierInput.addEventListener('focus', (e)=>{
+        if(alertDiv.childNodes.length > 0){
+            alertDiv.classList.remove('alert-danger')
+            alertDiv.innerHTML = ""
+        }
+        supplierInput.value = ""
+        setTimeout(()=>{supplierOptionsContainer.removeAttribute('hidden')}, 150)
+        supplierOptionsContainer.innerHTML = ""
+        supplierOptions.forEach(value =>{
+                supplierOptionsContainer.appendChild(value)
+            })
+    })
+    supplierInput.addEventListener('focusout', (e)=>{
+        setTimeout(()=>{supplierOptionsContainer.setAttribute('hidden', '')}, 150)
+    })
+    supplierInput.addEventListener('input', (e)=>{
+        supplierOptionsContainer.innerHTML = ""
+        if (supplierInput.value.length > 0){
+            let newValues = supplierOptions.filter((element) => element.innerHTML.toLocaleLowerCase().includes(supplierInput.value.toLocaleLowerCase()))
+            if(newValues.length > 0){
+                newValues.forEach(value =>{
+                    supplierOptionsContainer.appendChild(value)
+                })
+            }else{
+                let emptyPar = document.createElement('p')
+                emptyPar.appendChild(document.createTextNode('There is no matching items'))
+                emptyPar.classList.add('option')
+                emptyPar.setAttribute('disabled', '')
+                supplierOptionsContainer.appendChild(emptyPar)
+            }
+        }else{
+            supplierOptions.forEach(value =>{
+                supplierOptionsContainer.appendChild(value)
+            })
+        }
+    })
+    supplierOptions.forEach(option =>{
+        option.addEventListener('click', (e)=>{
+            supplierInput.value = e.target.innerHTML
+            selectedsupplierId.value = e.target.dataset.id
+            supplierOptionsContainer.innerHTML = ""
+            supplierOptions.forEach(value =>{
+                supplierOptionsContainer.appendChild(value)
+            })
+        })
     })
 </script>

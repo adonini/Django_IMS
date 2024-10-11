@@ -4,7 +4,7 @@ services:
   postgres:
     image: postgres:14.10
     restart: always
-    container_name: postgresql
+    container_name: postgresql_ims
     volumes: 
       - pgdata:/var/lib/postgresql/data
     environment:
@@ -16,7 +16,7 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
-    container_name: pgadmin
+    container_name: pgadmin_ims
     environment:
       - PGADMIN_DEFAULT_EMAIL=LST@admin.com
       - PGADMIN_DEFAULT_PASSWORD=LST
@@ -27,7 +27,7 @@ services:
 
   web:
     build: .
-    container_name: django
+    container_name: django_ims
     command: python manage.py runserver 0.0.0.0:8000
     volumes: 
       - .:/code
