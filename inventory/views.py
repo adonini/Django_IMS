@@ -67,18 +67,20 @@ class Index(View):
         critical_stock = []
         low_stock = []
         for index, group in enumerate(groups):
-            if group.minimum_stock and (group.group_stock() - group.minimum_stock) <= 2:
+            if group.minimum_stock and group.group_stock()<group.minimum_stock:
                 stock = group.group_stock()
-                group = model_to_dict(group, fields=['id', 'name', 'minimum_stock'])
-                group['group_stock'] = stock
+                group_dict = model_to_dict(group, fields=['id', 'minimum_stock'])
+                group_dict['name'] = group.group.name
+                group_dict['group_stock'] = stock
                 if len(critical_stock) < 3:
-                    critical_stock.append(group)
-            elif group.minimum_stock and (group.group_stock() - group.minimum_stock) <= 4 and (group.group_stock() - group.minimum_stock) > 2:
+                    critical_stock.append(group_dict)
+            elif group.minimum_stock and (group.group_stock() - group.minimum_stock) <=1:
                 stock = group.group_stock()
-                group = model_to_dict(group, fields=['id', 'name', 'minimum_stock'])
-                group['group_stock'] = stock
+                group_dict = model_to_dict(group, fields=['id', 'minimum_stock'])
+                group_dict['name'] = group.group.name
+                group_dict['group_stock'] = stock
                 if len(low_stock) < 3:
-                    low_stock.append(group)
+                    low_stock.append(group_dict)
         today = timezone.now().date()
         query1 = '''
             SELECT id, table_name, column_name, row_id, old_value, new_value, changed_at, changed_by
@@ -111,8 +113,9 @@ class Index(View):
                         else:
                             latestUsed.append({'itemName': item.part_number.group.name, 'itemPk': item.pk, 'date': result[6], 'user': result[7], 'telescope': item.telescope.telescope.name+" - "+item.telescope.name})
         context['latest_used'] = latestUsed
-        context['next_purchases'] = Purchase_group.objects.exclude(status=Purchase_status.objects.get(name='Received')).order_by('expected_delivery_date').filter(expected_delivery_date__gte=today)[:5]
-        purchasesIds = list(Purchase_group.objects.exclude(status=Purchase_status.objects.get(name='Received')).order_by('expected_delivery_date').filter(expected_delivery_date__gte=today).values_list('id', flat=True)[:5])
+        purchasesIds = list(Purchase_group.objects.exclude(status=Purchase_status.objects.get(name='Received')).order_by('order_date'))
+        context['next_purchases'] = Purchase_group.objects.exclude(status=Purchase_status.objects.get(name='Received')).order_by('order_date').filter(Q(expected_delivery_date__gte=today) | Q(expected_delivery_date__isnull=True))[:5]
+        purchasesIds = list(Purchase_group.objects.exclude(status=Purchase_status.objects.get(name='Received')).order_by('order_date').filter(Q(expected_delivery_date__gte=today) | Q(expected_delivery_date__isnull=True)).values_list('id', flat=True)[:5])
         context['purchases_related'] = list(Purchase.objects.filter(purchase_group_id__in=purchasesIds).values('purchase_group_id', 'item_id'))
         context['critical_stock'] = critical_stock
         context['low_stock'] = low_stock
@@ -338,18 +341,20 @@ class Stock_list(LoginRequiredMixin, View):
             context['allGroups'] = []
             for number in numbers:
                 if number.minimum_stock:
-                    result = number.group_stock()-number.minimum_stock
-                    if result < 2:
+                    result = number.group_stock()<number.minimum_stock
+                    if result == True:
                         result = 'Critical'
-                    elif result <= 4:
-                        result = 'Low'
                     else:
-                        result = 'Ok'
+                        result = number.group_stock()-number.minimum_stock
+                        if result <= 1:
+                            result = 'Low'
+                        else:
+                            result = 'Ok'
                     group_data = {
                         'group': number,
                         'part_number': number.code,
                         'stock': number.group_stock(),
-                        'purchase': number.pending_purchases(number.code),
+                        'purchase': number.pending_purchases(),
                         'status': result
                     }
                     context['allGroups'].append(group_data)
@@ -399,17 +404,15 @@ class AddStock(LoginRequiredMixin, View):
                         stock_entry.delete()
                     messages.success(request, 'Item usage saved successfully.')
                 else:
+                    logger.debug(form.fields)
                     NewStock = form.save()
                     NewStock.user = currentUser
                     NewStock.save()
                     item = Item.objects.get(pk=request.POST['item'])
                     storedStatus = Item_status.objects.get(name='Stored')
                     item.status = storedStatus
-                            
-                    if request.POST['part_number'] is not None:
-                        item.part_number = request.POST['part_number']
-                    if request.POST['serial_number'] is not None:
-                        item.serial_number = request.POST['serial_number']
+                    if form.cleaned_data['serial_number'] is not None:
+                        item.serial_number = form.cleaned_data['serial_number']
                     item.save()
                     messages.success(request, 'Stock has been saved successfully.')
                 resp['status'] = 'success'
@@ -426,9 +429,8 @@ class ManageStock(LoginRequiredMixin, View):
     def get(self, request, operation=None, pk=None):
         if pk is None:
             if operation == 'add':
-                storedStatus = Item_status.objects.get(name='Purchased').id
-                items = Item.objects.filter(Q(status_id=storedStatus) | Q(status__isnull=True)).order_by('group__name')
-                unStockedItems = list(Item.objects.filter(status_id=None).values('id', 'group', 'part_number', 'serial_number'))
+                items = Item.objects.filter(status=Item_status.objects.get(name='Unmanaged')).order_by('part_number__code')
+                unStockedItems = list(Item.objects.filter(status=Item_status.objects.get(name='Unmanaged')).values('id', 'part_number__code', 'serial_number'))
                 context['items'] = items
                 context['unStockedItems'] = unStockedItems
                 context['operation'] = 1
@@ -627,10 +629,12 @@ class AddPurchase(LoginRequiredMixin, View):
                 newForm = form.save(commit=False)
                 newForm.status = purchasedStatus
                 newForm.creator_user = currentUser
+                logger.debug(form.cleaned_data['order_date'])
                 if not newForm.standard_lead_time:
-                    newForm.standard_lead_time = Purchase_group._meta.get_field('standard_lead_time').default
-                if not newForm.expected_delivery_date:
-                    newForm.expected_delivery_date = date.today() + timedelta(days=newForm.standard_lead_time)
+                    newForm.standard_lead_time = Purchase_group._meta.get_field('standard_lead_time').default #Needs a check
+                #Removed the default +7 days
+                #if not newForm.expected_delivery_date:
+                    #newForm.expected_delivery_date = form.cleaned_data['order_date'] + timedelta(days=newForm.standard_lead_time)
                 newForm.save()
                 itemPattern = re.compile(r'^data\[\d+\]\[item\]$')
                 pricePattern = re.compile(r'^data\[\d+\]\[price\]$')

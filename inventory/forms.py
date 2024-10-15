@@ -1,8 +1,11 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
+from django.core.exceptions import ValidationError
 from .models import Item, Category, Stock, Producer, Stock_Type, Group, Item_status, Telescope, Zone, Purchase_status, Purchase_group, Purchase, Payment_sources, Supplier, Telescope_structure, PartNumber
+import logging
 
+logger = logging.getLogger(__name__)
 
 class UserRegisterForm(UserCreationForm):
     email = forms.EmailField()
@@ -14,7 +17,6 @@ class UserRegisterForm(UserCreationForm):
 
 class AddItemForm(forms.ModelForm):
     group = forms.ModelChoiceField(queryset=Group.objects.all(), initial=0, required=True)
-    part_number = forms.CharField(required=True)
     serial_number = forms.CharField(required=False)
     price = forms.DecimalField(required=False, max_digits=10, decimal_places=2)
     producer = forms.ModelChoiceField(queryset=Producer.objects.all(), initial=0, required=False)  # to give the choice between already existing categories
@@ -24,18 +26,19 @@ class AddItemForm(forms.ModelForm):
     status = forms.ModelChoiceField(queryset=Item_status.objects.all(), initial=0, required=False) 
     telescope = forms.ModelChoiceField(queryset=Telescope_structure.objects.all(), initial=0, required=False)
     quantity = forms.FloatField(required=False)
+    part_number = forms.CharField(required=True)
 
     class Meta:
         model = Item
         fields = ['group', 'part_number', 'serial_number', 'price', 'producer', 'expiration_date', 'model', 'datasheet_url', 'status', 'telescope', 'quantity']
 
     def clean_part_number(self):
+        group=self.cleaned_data['group']
         part_number_input = self.cleaned_data['part_number']
         if isinstance(part_number_input, PartNumber):
             return part_number_input
-        group=self.cleaned_data['group']
         part_number_instance, created = PartNumber.objects.get_or_create(code=part_number_input, group=group)
-        return part_number_instance
+        return part_number_instance 
     
     def save(self, commit=True):
         instance = super(AddItemForm, self).save(commit=False)
@@ -72,6 +75,7 @@ class AddItemForm(forms.ModelForm):
 class AddStockForm(forms.ModelForm):
     item = forms.ModelChoiceField(queryset=Item.objects.all(), initial=0, required=True)
     stock_type = forms.ModelChoiceField(queryset=Stock_Type.objects.all(), initial=0, required=True)
+    serial_number= forms.CharField(required=False)
     zone = forms.ModelChoiceField(queryset=Zone.objects.all(), initial=0, required=True)
     quantity = forms.IntegerField(required=True)
 

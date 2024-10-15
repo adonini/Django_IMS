@@ -49,7 +49,7 @@
 							</div>
 						{% else %}
 							<div class="d-flex justify-content-center align-items-center mb-3 border-top pt-2">
-								<h5 class="text-center">There is no items with</h5> <h5 class="mt-0 mb-0 me-1 ms-1 text-center"><span class="badge bCrit">Critical</span></h5><h5>stock at the moment.</h5>
+								<h5 class="text-center">There aren't any items with</h5> <h5 class="mt-0 mb-0 me-1 ms-1 text-center"><span class="badge bCrit">Critical</span></h5><h5>stock at the moment.</h5>
 							</div>
 						{% endif %}
 						{% if low_stock %}
@@ -80,7 +80,7 @@
 							</div>
 						{% else %}
 							<div class="d-flex justify-content-center align-items-center mb-3 border-top pt-2">
-								<h5 class="text-center">There is no items with</h5> <h5 class="mt-0 mb-0 me-1 ms-1 text-center"><span class="badge bLow">Low</span></h5><h5>stock at the moment.</h5>
+								<h5 class="text-center">There aren't any items with</h5> <h5 class="mt-0 mb-0 me-1 ms-1 text-center"><span class="badge bLow">Low</span></h5><h5>stock at the moment.</h5>
 							</div>
 						{% endif %}
 					</div>
@@ -97,7 +97,7 @@
 										<div class="cardHeader border-bottom mb-2">
 											<div class="w-100 text-center mb-1">
 												<h5 class="mb-0">{{element.itemName}}</h5>
-												<strong>{% if element.itemCode %}{{element.itemCode}}{% elif element.itemSerial %}{{element.itemSerial}}{% else %}{{element.itemPk}}{% endif %}</strong>
+												<strong>{% if element.itempart_number %}{{element.itempart_number}}{% endif %}</strong>
 											</div>
 										</div>
 										<div class="cardBody d-flex flex-column justify-content-evenly h-100 w-100">
@@ -122,7 +122,7 @@
 						</div>
 					{% else %}
 					<div class="d-flex justify-content-center align-items-center mb-3 border-top pt-2">
-						<h5 class="text-center">There is no <strong>used</strong> items at the moment.</h5>
+						<h5 class="text-center">There aren't any <strong>used</strong> items at the moment.</h5>
 					</div>
 					{% endif %}
 				</div>
@@ -151,7 +151,7 @@
 								</div>
 								<div class="d-flex flex-column align-items-center mb-1">
 									<strong class="text-center mb-0">Expected delivery date</strong>
-									<p>{{purchase.expected_delivery_date|date:"d/m/Y"}}</p>
+									<p>{% if purchase.expected_delivery_date %}{{purchase.expected_delivery_date|date:"d/m/Y"}}{% else %}-{% endif %}</p>
 								</div>
 							</div>
 							{% if user|has_group:"admin" or user|has_group:"technician" %}
@@ -211,7 +211,7 @@
 			title.innerHTML = "Receive Items"
 			let anchor = document.createElement('div')
 			let editIcon = document.createElement('i')
-			editIcon.classList.add('fa', 'fa-boxes-stacked')
+			editIcon.classList.add('fa', 'fa-boxes-stacked', 'me-1')
 			anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
 			anchor.addEventListener('click', (e)=>{
 				$('#uni_modal').modal('hide')
@@ -248,43 +248,139 @@
 			receiveSubmitButton.appendChild(receiveSubmitPar)
 			let nextId = null
 			let nextItem = null
+			let serialCheck = null
+			let zoneCheck = null
+			let zoneSelect = null
+			$('#uni_modal').on('shown.bs.modal', function() {
+				serialCheck = document.querySelector('#empty-sn')
+				zoneCheck = document.querySelector('#assign-all')
+				zoneSelect = document.querySelector('#zone')
+				receiveClone = receiveButton.cloneNode(true)
+				if(serialCheck != null){
+					serialCheck.addEventListener('change', ()=>{
+						let serialInput = document.querySelector('#serial_number')
+						if(serialCheck.checked){
+							if (serialInput.value == ""){
+								serialInput.value = "-"
+							}
+							serialInput.setAttribute('disabled', "")
+							if(zoneCheck.checked){
+								if(modalFooter.childNodes[0].contains(saveButton)){
+									modalFooter.childNodes[0].removeChild(saveButton)
+									receiveClone.addEventListener('click', ()=>{
+										for(item in filteredItems){
+											if(small){
+												item_data[filteredItems[item].item_id] = {item: filteredItems[item].item_id, zone: zoneSelect.value, serial_number: serialInput.value}
+											}else{
+												item_data[filteredItems[item].id] = {item: filteredItems[item].id, zone: zoneSelect.value, serial_number: serialInput.value}
+											}
+										}
+										receive_purchase(id, item_data)
+									})
+									modalFooter.childNodes[0].appendChild(receiveClone)
+								}
+							}
+						}else{
+							if(serialInput.value == "-"){
+								serialInput.value = ""
+							}
+							serialInput.removeAttribute('disabled')
+							if(zoneCheck.checked){
+								if(modalFooter.childNodes[0].contains(receiveClone)){
+									modalFooter.childNodes[0].removeChild(receiveClone)
+									modalFooter.childNodes[0].appendChild(saveButton)
+								}
+							}
+						}
+					})
+				}
+				if(zoneCheck != null){
+					zoneCheck.addEventListener('change', ()=>{
+						if (zoneSelect.value == 'All'){
+							zoneSelect.value = 1
+						}
+						if(zoneCheck.checked && serialCheck.checked){
+							if(modalFooter.childNodes[0].contains(saveButton)){
+								modalFooter.childNodes[0].removeChild(saveButton)
+								receiveClone.addEventListener('click', ()=>{
+									for(item in filteredItems){
+										if(small){
+											item_data[filteredItems[item].item_id] = {item: filteredItems[item].item_id, zone: zoneSelect.value, serial_number: serialInput.value}
+										}else{
+											item_data[filteredItems[item].id] = {item: filteredItems[item].id, zone: zoneSelect.value, serial_number: serialInput.value}
+										}
+									}
+									receive_purchase(id, item_data)
+								})
+								modalFooter.childNodes[0].appendChild(receiveClone)
+							}
+						}else{
+							if(modalFooter.childNodes[0].contains(receiveClone)){
+								modalFooter.childNodes[0].removeChild(receiveClone)
+								modalFooter.childNodes[0].appendChild(saveButton)
+							}
+						}
+					})
+				}
+			})
 			saveButton.addEventListener('click', (e)=>{
 				let itemKeys = Object.keys(item_data)
-				let codeInput = document.querySelector('#code')
 				let serialInput = document.querySelector('#serial_number')
-				let zoneCheck = document.querySelector('#assign-all')
 				let zoneSelect = document.querySelector('#zone')
 				let itemInput = document.querySelector('#item')
-				if (codeInput.value != '' && codeInput.value != null && codeInput.value.length > 4 || serialInput.value != '' && serialInput.value != null && serialInput.value.length > 4){
-					if(zoneCheck.checked){
-						if(zoneSelect.value != null){
-							sharedZoneId = zoneSelect.selectedIndex
-							Object.keys(item_data).forEach(key => {
-								item_data[key].zone = zoneSelect.value
-							})
+				if (serialCheck.checked || serialInput.value != '' && serialInput.value != null && serialInput.value.length > 4){
+					if(zoneCheck.checked && serialCheck.checked){
+						for(item in filteredItems){
+							if(small){
+								item_data[filteredItems[item].item_id] = {item: filteredItems[item].item_id, zone: zoneSelect.value, serial_number: serialInput.value}
+							}else{
+								item_data[filteredItems[item].id] = {item: filteredItems[item].id, zone: zoneSelect.value, serial_number: serialInput.value}
+							}
+						}
+						receive_purchase(id, item_data)
+					}else{
+						if(zoneCheck.checked){
+							if(zoneSelect.value != null){
+								sharedZoneId = zoneSelect.selectedIndex
+								Object.keys(item_data).forEach(key => {
+									item_data[key].zone = zoneSelect.value
+								})
+							}
 						}
 					}
-					if (index == 0 ){
-						item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+					if (index == 0){
+						item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, serial_number: serialInput.value}
 					}else{
-						item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+						item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, serial_number: serialInput.value}
 					}
-					if(filteredItems.length != itemKeys.length && index != filteredItems.length-1){
+					if(index != filteredItems.length){
 						index += 1
 					}
 					if(filteredItems[index] != null){
-						nextId = filteredItems[index].id
-						nextItem = filteredItems.filter(element => element.id == nextId)[0]
-						if (item_data[nextId] == null){
-							console.log('The id is: '+nextId)
-							itemInput.value = nextItem.group__name+" - "+nextItem.id
-							if(sharedZoneId != null){
-								zoneSelect.selectedIndex = sharedZoneId
-							}else{
-								zoneSelect.selectedIndex = 0
-							}
-							codeInput.value = nextItem.code
+						if(!small){
+							nextId = filteredItems[index].id
+							nextItem = items.filter(element => element.id == nextId)[0]
+						}else{
+							nextId = filteredItems[index].item_id
+							nextItem = items.filter(element => element.id == nextId)[0]
+						}
+						itemInput.value = nextItem.group__name+" - "+nextItem.id
+						if(sharedZoneId != null){
+							zoneSelect.selectedIndex = sharedZoneId
+						}else{
+							zoneSelect.selectedIndex = 0
+						}
+						if(!serialCheck.checked){
 							serialInput.value = nextItem.serial_number
+							if(nextItem.serial_number != null && nextItem.serial_number != ''){
+								if(!serialInput.disabled){
+									serialInput.setAttribute('disabled', '')
+								}
+							}else{
+								if(serialInput.disabled){
+									serialInput.removeAttribute('disabled')
+								}
+							}
 						}
 					}
 					let circlesDiv = document.querySelector('.circlesDiv')
@@ -292,20 +388,22 @@
 						if (child.classList.contains('circleSelected') && child.id != nextId){
 							child.classList.remove('circleSelected')
 						}else if(!child.classList.contains('circleSelected') && child.id == nextId){
+							if(child.classList.contains('circleFilled')){
+								child.classList.remove('circleFilled')
+							}
 							child.classList.add('circleSelected')
 						}
 						if(item_data[child.id] != null){
 							child.classList.add('circleFilled')
 							child.addEventListener('click', (e)=>{
-								console.log(item_data[child.id])
 								if(item_data[child.id] != null){
 									if (index == 0 ){
 										if(item_data[firstId.toString()] == null){
-											item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+											item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, serial_number: serialInput.value}
 										}
 									}else{
 										if(item_data[nextId.toString()] == null){
-											item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+											item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, serial_number: serialInput.value}
 										}
 									}
 									circlesDiv.childNodes.forEach((child, arrayIndex)=>{
@@ -315,20 +413,29 @@
 												if(item_data[child.id] != null){
 													if (index == 0 ){
 														if(item_data[firstId.toString()] == null){
-															item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+															item_data[firstId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, serial_number: serialInput.value}
 														}
 													}else{
 														if(item_data[nextId.toString()] == null){
-															item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, code: codeInput.value, serial_number: serialInput.value}
+															item_data[nextId.toString()] = {item: document.querySelector('.circleSelected').id, zone: zoneSelect.value, serial_number: serialInput.value}
 														}
 													}
 													index = arrayIndex
-													let currentItem = filteredItems.filter(element => element.id == parseInt(item_data[child.id].item))[0]
+													let currentItem = items.filter(element => element.id == parseInt(item_data[child.id].item))[0]
 													itemInput.value = currentItem.group__name+" - "+currentItem.id
-													console.log(item_data[child.id].zone)
-													zoneSelect.value = item_data[child.id].zone //This is the problem!
-													codeInput.value = item_data[child.id].code
-													serialInput.value = item_data[child.id].serial_number
+													zoneSelect.value = parseInt(item_data[child.id].zone)
+													if(!serialCheck.checked){
+														serialInput.value = item_data[child.id].serial_number
+														if(item_data[child.id].serial_number != null && item_data[child.id].serial_number != ''){
+															if(!serialInput.disabled){
+																serialInput.setAttribute('disabled', '')
+															}
+														}else{
+															if(serialInput.disabled){
+																serialInput.removeAttribute('disabled')
+															}
+														}
+													}
 													circlesDiv.childNodes.forEach((element)=>{
 														element.classList.value = ''
 														element.classList.add('circle')
@@ -346,11 +453,21 @@
 									})
 									index = arrayIndex
 									nextId = child.id
-									let currentItem = filteredItems.filter(element => element.id == parseInt(item_data[child.id].item))[0]
+									let currentItem = items.filter(element => element.id == parseInt(item_data[child.id].item))[0]
 									itemInput.value = currentItem.group__name+" - "+currentItem.id
-									zoneSelect.selectedIndex = parseInt(item_data[child.id].zone)
-									codeInput.value = item_data[child.id].code
-									serialInput.value = item_data[child.id].serial_number
+									zoneSelect.value = parseInt(item_data[child.id].zone)
+									if(!serialCheck.checked){
+										serialInput.value = item_data[child.id].serial_number
+										if(item_data[child.id].serial_number != null && item_data[child.id].serial_number != ''){
+											if(!serialInput.disabled){
+												serialInput.setAttribute('disabled', '')
+											}
+										}else{
+											if(serialInput.disabled){
+												serialInput.removeAttribute('disabled')
+											}
+										}
+									}
 									circlesDiv.childNodes.forEach((element)=>{
 										element.classList.value = ''
 										element.classList.add('circle')
@@ -367,25 +484,20 @@
 						}
 					})
 				}else{
-					let message = document.querySelector('#fieldsMessage')
-					message.classList.add('fieldsError')
-					setTimeout(()=>{message.classList.remove('fieldsError')}, 1000)
+					let message = document.querySelector('#alert')
+					message.removeAttribute('hidden')
+					setTimeout(()=>{message.setAttribute('hidden', '')}, 3000)
 				}
 				itemKeys = Object.keys(item_data)
-				console.log(filteredItems.length)
-				console.log(itemKeys.length)
-				if(filteredItems.length == itemKeys.length){
-					console.log('The lengths are the same')
+				if(index == filteredItems.length){
 					let emptyFields = false
 					let emptyId = null
 					itemKeys.forEach(key => {
-						if(item_data[key].code == '' && item_data[key].serial_number == ''){
+						if(item_data[key].serial_number == ''){
 							emptyFields = true
 							if(emptyId == null){
 								emptyId = item_data[key].item
 							}
-						}else{
-
 						}
 					})
 					if(!emptyFields){
@@ -410,7 +522,6 @@
 			continueDiv.appendChild(itemCicles)
 			continueDiv.appendChild(saveButton)
 			modalFooter.appendChild(continueDiv)
-			//receive_purchase()
 		})
 	})
 	$(document).on('click', '.purchase-data', function(e) {
@@ -530,7 +641,7 @@
 					title.innerHTML = "Receive Items"
 					let anchor = document.createElement('div')
 					let editIcon = document.createElement('i')
-					editIcon.classList.add('fa', 'fa-boxes-stacked')
+					editIcon.classList.add('fa', 'fa-boxes-stacked', 'me-1')
 					anchor.classList.add('btn', 'highlight-color', 'dark-text', 'close')
 					anchor.addEventListener('click', (e)=>{
 						$('#uni_modal').modal('hide')

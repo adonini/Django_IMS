@@ -47,7 +47,7 @@
                 <div class="form-group mb-3 ">
                     <label for="part_number" class="control-label">Part Number</label>
                     {% if not item.part_number %}
-                        <input type="text" class="form-control rounded-0" id="part_number" name="part_number" value="" disabled autocomplete="off" placeholder="Select an Item first">
+                        <input type="text" class="form-control rounded-0" id="part_number" name="part_number_input" value="" disabled autocomplete="off" placeholder="Select an Item first">
                         <input type="hidden" id="part_numberId" name="part_number" value="">
                     {% else %}
                         <input type="text" class="form-control rounded-0" id="part_number" placeholder="Type to filter the items" value="{{item.part_number.code}}" autocomplete="off">
@@ -179,7 +179,7 @@
         })
     }
     //New Filter and selector input -- Groups
-    {% if user|has_group:"admin" %}
+    {% if user|has_group:"admin" or user|has_group:"technician" %}
         groupInput = document.querySelector('#groupSelector')
         groupOptionsContainer = document.querySelector('.groupOptionsContainer')
         selectedGroupId = document.querySelector('#selectedGroupId')
@@ -293,23 +293,28 @@
         part_numberContainer.innerHTML = ""
         part_numberInput.removeAttribute('disabled')
         part_numberInput.placeholder = 'Select or type a new part number'
-        partNumber_data[e.target.value].forEach(element=>{
-            let p_part_number = document.createElement('p')
-            p_part_number.classList.add('option')
-            p_part_number.dataset.id = element.code
-            p_part_number.appendChild(document.createTextNode(element.code))
-            p_part_number.addEventListener('click', (e)=>{
-                part_numberInput.value = e.target.innerHTML
-                part_numberId.value = e.target.dataset.id
+        if(partNumber_data[e.target.value] != null){
+            partNumber_data[e.target.value].forEach(element=>{
+                let p_part_number = document.createElement('p')
+                p_part_number.classList.add('option')
+                p_part_number.dataset.id = element.code
+                p_part_number.appendChild(document.createTextNode(element.code))
+                p_part_number.addEventListener('click', (e)=>{
+                    part_numberInput.value = e.target.innerHTML
+                    part_numberId.value = e.target.dataset.id
+                })
+                part_numberContainer.appendChild(p_part_number)
             })
-            part_numberContainer.appendChild(p_part_number)
-        })
+        }
         part_numberInput.addEventListener('focus', (e)=>{
             part_numberInput.value = ""
             setTimeout(()=>{part_numberContainer.removeAttribute('hidden')}, 150)
         })
         part_numberInput.addEventListener('focusout', (e)=>{
             setTimeout(()=>{part_numberContainer.setAttribute('hidden', '')}, 150)
+            if(part_numberId.value != part_numberInput.value){
+                part_numberId.value = part_numberInput.value
+            }
         })
     })
 </script>

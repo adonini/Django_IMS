@@ -707,3 +707,9 @@ i{
 .infoBorder:hover{
     cursor: pointer;
 }
+.translateTH{
+    transform:  translateX(6.5rem);
+}
+.translateU{
+    transform:  translateX(2rem);
+}

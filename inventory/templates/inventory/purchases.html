@@ -25,7 +25,7 @@
                     <th class="text-center dark-text">Order Number</th>
                     <th class="text-center dark-text">Order Date</th>
                     <th class="text-center dark-text">Expected Delivery Date</th>
-                    <th class="text-center dark-text">Total Price</th>
+                    <th class="text-center dark-text">Total Items Price</th>
                     <th class="text-center dark-text">Shipping Cost</th>
                     <th class="text-center dark-text">Status</th>
                     <th class="text-center dark-text">{% if user|has_group:"admin" or user|has_group:"technician" %} Actions {% else %} Details {% endif %}</th>
@@ -37,8 +37,8 @@
                     <td class="align-canter text-center light-text">{{ forloop.counter }}</td>
                     <td class="align-canter text-center light-text" >{{purchase.order_number}}</td>
                     <td class="align-canter text-center light-text" >{% if purchase.order_date %}{{purchase.order_date | date:"d/m/Y"}}{% else %} - {% endif %}</td>
-                    <td class="align-canter text-center light-text" >{{purchase.expected_delivery_date | date:"d/m/Y"}}</td>
-                    <td class="align-canter text-center light-text" >{{purchase.calculate_amount}} </td>
+                    <td class="align-canter text-center light-text" >{% if purchase.expected_delivery_date %}{{purchase.expected_delivery_date | date:"d/m/Y"}}{% else %}-{% endif %}</td>
+                    <td class="align-canter text-center light-text" >{{purchase.calculate_amount}}</td>
                     <td class="align-canter text-center light-text" >{% if purchase.shipping_cost %}{{purchase.shipping_cost}}{% else %} - {% endif %}</td>
                     <td class="align-canter text-center light-text" ><div class="{{purchase.status.name|lower}}">{{purchase.status.name}}</div></td>
                     <td class="align-center text-center light-text">
@@ -53,7 +53,7 @@
                                         <i class="fa fa-edit"></i>
                                     </button>
                             {% endif %}
-                            <button type="button" class="btn btn-bg-dark btn-sm purchase-data {% if not user|has_group:'technician' and not user|has_group:'admin' %} widerIcon {% endif %}" href="javascript:void(0)" data-id="{{ purchase.pk }}" data-status="{{purchase.status.name|lower}}" title="Purchase information">
+                            <button type="button" class="btn btn-bg-dark btn-sm purchase-data {% if not user|has_group:'technician' and not user|has_group:'admin' %} widerIcon {% endif %}" href="javascript:void(0)" data-id="{{ purchase.pk }}" data-status="{{purchase.status.name|lower}}" data-user="{{purchase.creator_user}}" title="Purchase information">
                                 <i class="fa fa-info-circle"></i>
                             </button>
                             {% if purchase.status.name|lower != 'received' and user|has_group:"admin" %}
@@ -677,7 +677,6 @@ const receivePurchase = (e, items, id, modalFooter, small=false, receiveButton, 
         let zoneSelect = document.querySelector('#zone')
         let itemInput = document.querySelector('#item')
         if (serialCheck.checked || serialInput.value != '' && serialInput.value != null && serialInput.value.length > 4){
-            //I need to change the button to Receive when all the checkbox are selected
             if(zoneCheck.checked && serialCheck.checked){
                 for(item in filteredItems){
                     if(small){

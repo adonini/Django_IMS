@@ -17,24 +17,16 @@
         <li class="list-group-item"><strong>Telescope</strong> <br> {% if item.telescope is not None %}{{ item.telescope.name }}{% else %}{{item.telescope}}{% endif %}</li>
     </ul>
 </div>
+{% if item.producer or item.datasheet_url %}
 <h4>Related to this item</h4>
 <div class="cards">
-    <div class="card">
-        <div class="cardContent">
-            <strong>Producer</strong>
-            {% if item.producer is not None %}{{ item.producer.name }}{% else %}{{item.producer}}{% endif %}
-        </div>
-        <button class="adminButton link producerBtn">View</button>
-    </div>
-    {% if item.status.name == 'Installed' %}
+    {% if item.producer is not None and item.producer != '' %}
         <div class="card">
             <div class="cardContent">
-                <strong class="text-center {% if user|has_group:"user" %} mb-3 {% endif %}">Instalation Date</strong>
-                {{instalation_date| date:"d/m/Y"}}
+                <strong>Producer</strong>
+                {% if item.producer is not None %}{{ item.producer.name }}{% else %}{{item.producer}}{% endif %}
             </div>
-            {% if user|has_group:"admin" or user|has_group:"technician" %}
-                <button class="adminButton link uninstallBtn">Uninstall</button>
-            {% endif %}
+            <button class="adminButton link producerBtn">View</button>
         </div>
     {% endif %}
     {% if item.datasheet_url is not None and item.datasheet_url != '' %}
@@ -46,3 +38,4 @@
         </div>
     {% endif %}
 </div>
+{% endif %}
