@@ -10,12 +10,12 @@
         <li class="list-group-item"><strong>Location</strong> <br> {% if stock.zone.location is not None %}{{ stock.zone.location.name }}{% else %}{{ stock.zone.location }}{% endif %}</li>
         <li class="list-group-item"><strong>Zone</strong> <br> {% if stock.zone is not None %}{{ stock.zone.name }}{% else %}{{ stock.zone }}{% endif %}</li>
         <li class="list-group-item"><strong>Total group quantity</strong> <br> {{ stock.count_inventory}}</li>
-        <li class="list-group-item"><strong>Storage user</strong> <br> {{stock.user}}</li>
+        <li class="list-group-item"><strong>Stored by</strong> <br> {{stock.user}}</li>
     </ul>
 </div> 
 <div class="btnWrapper d-flex justify-content-center w-100">
     <div class="mt-3 d-flex justify-content-center align-items-center oldPill {% if not stock.old %}hidden{% endif %}">
         <i class="fa fa-exclamation-triangle "></i>
-        <p class="text-center justify-content-center mb-0 ms-1">Deprecated</p>
+        <p class="text-center justify-content-center mb-0 ms-1">Outdated</p>
     </div>
 </div>

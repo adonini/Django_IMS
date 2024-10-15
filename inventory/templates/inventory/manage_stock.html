@@ -10,7 +10,7 @@
         <div class="form-group mb-3 position-relative">
             <label for="item" class="control-label">Items</label>
             {% if stock.item is None %}
-                <input type="text" class="form-control rounded-0" id="itemSelector" placeholder="Type to filter the items" autocomplete="false">
+                <input type="text" class="form-control rounded-0" id="itemSelector" placeholder="Type to filter the items" autocomplete="off">
                 <input type="hidden" id="selectedItemId" name="item" value="">
                 <div class="itemOptionsContainer" hidden>
                     {% for item in items %}
@@ -36,12 +36,12 @@
         <div class="optionalInputs hidden">
             <p class="dark-text text-center mb-0" hidden>Please fill one or both of the fields below.</p>
             <div class="form-group mb-3 ">
-                <label for="code" class="control-label">Part Number</label>
-                <input type="text" class="form-control rounded-0" pattern="^[A-Za-z]+-[A-Za-z0-9]+$" title="Please follow this format (... = Might be more characters, X = Letters): XX...-XX45..." id="code" name="code" value="{{ item.code }}" required>
+                <label for="part_number" class="control-label">Part Number</label>
+                <input type="text" class="form-control rounded-0" id="part_number" name="part_number" value="{{ item.part_number.code }}" {% if item.part_number.code %}disabled{% endif %}required>
             </div>
             <div class="form-group mb-3 ">
                 <label for="serial_number" class="control-label">Serial Number</label>
-                <input type="text" class="form-control rounded-0" id="serial_number" pattern=".{4,}" title="Minimum 4 characters" name="serial_number" value="{{ item.serial_number }}" required>
+                <input type="text" class="form-control rounded-0" id="serial_number" name="serial_number" value="{{ item.serial_number }}">
             </div>
         </div>
         <div class="instalation {% if operation == 1 %} hidden {% endif %}">
@@ -72,11 +72,10 @@
     $(function() {
         $('#stock-form').submit(function(e) {
             e.preventDefault();
-            let codeInput = document.querySelector('#code')
+            let codeInput = document.querySelector('#part_number')
             let serialInput = document.querySelector('#serial_number')
-            if((operation == 1 && (codeInput.value.length > 0 || serialInput.value.length > 0)) || operation == 2){
+            if((operation == 1 && (codeInput.value.length > 0)) || operation == 2){
                 codeInput.removeAttribute('required')
-                serialInput.removeAttribute('required')
             }
             var _this = $(this)
             $('.err-msg').remove();
@@ -121,18 +120,20 @@
             })
         })
         if(operation == 1){
-            $('#item').on('change', function(e){
-                let codeInput = document.querySelector('#code')
+            $('.option').on('click', function(e){
+                let codeInput = document.querySelector('#part_number')
                 let serialInput = document.querySelector('#serial_number')
-                let foundItem = unStockedItems.filter(item => item.id == e.target.value)[0]
-                console.log(unStockedItems)
-                if(foundItem.code != null && foundItem.code != ""){
-                    codeInput.value = foundItem.code
+                let foundItem = unStockedItems.filter(item => item.id == e.target.dataset.id)[0]
+                console.log(foundItem)
+                if(foundItem.part_number__code != null && foundItem.part_number__code != ""){
+                    codeInput.value = foundItem.part_number__code
+                    codeInput.setAttribute('disabled', '')
                 }else{
                     codeInput.value = ""
                 }
                 if(foundItem.serial_number != null && foundItem.serial_number != ""){
                     serialInput.value = foundItem.serial_number
+                    serialInput.setAttribute('disabled', '')
                 }else{
                     serialInput.value = ""
                 }
